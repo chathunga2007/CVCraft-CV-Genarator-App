@@ -36,15 +36,21 @@ def main():
     if ico_path.exists():
         app.setWindowIcon(QIcon(str(ico_path)))
 
-    # Set refined font
-    font = QFont("Segoe UI", 10)
+    # Set refined font with explicit pixel size
+    font = QFont("Segoe UI")
+    font.setPixelSize(13)
     font.setStyleHint(QFont.StyleHint.SansSerif)
     app.setFont(font)
 
     # 3. Splash Screen Startup Flow
     splash = SplashView()
-    splash.resize(460, 320)
-    splash.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+    screen = app.primaryScreen()
+    if screen:
+        screen_geom = screen.geometry()
+        splash.move(
+            (screen_geom.width() - splash.width()) // 2,
+            (screen_geom.height() - splash.height()) // 2
+        )
     splash.show()
 
     main_win = None
