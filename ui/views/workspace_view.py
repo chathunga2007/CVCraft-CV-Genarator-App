@@ -1,20 +1,20 @@
 """
 CVCraft Workspace View
 The 3-column powerhouse editor:
-Column 1: Section Navigation & Reordering
-Column 2: Dynamic Rich Form with Validation & AI Assistant
-Column 3: Live Real-Time Multi-Page PDF Preview
+Column 1: Section Navigation with Completion Indicators & Reordering
+Column 2: Dynamic Rich Form with Validation, AI Assistant & Styling Controls
+Column 3: Live Real-Time Multi-Page PDF Preview with Zoom & Print
 """
 
 import os
+import sys
 import copy
 from typing import Optional, List, Dict, Any
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
     QPushButton, QComboBox, QCheckBox, QScrollArea, QFrame, QFileDialog,
-    QStackedWidget, QMessageBox, QDialog, QDialogButtonBox, QListWidget,
-    QListWidgetItem, QSizePolicy
+    QStackedWidget, QMessageBox, QDialog, QListWidget, QListWidgetItem
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QPixmap
@@ -29,25 +29,24 @@ from services.pdf_service import PDFService
 from services.ai_service import AIService
 from repositories.cv_repository import CVRepository
 from ui.components.live_preview_widget import LivePreviewWidget
-from config import TEMPLATES, COLOR_PALETTES, PHOTOS_DIR
+from config import TEMPLATES, COLOR_PALETTES, PHOTOS_DIR, AVAILABLE_FONTS
 
 class AIApprovalDialog(QDialog):
     def __init__(self, title: str, original: str, suggested: str, rationale: str, parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(600, 480)
-        self.setStyleSheet("background-color: #1E293B; color: #F8FAFC;")
 
         layout = QVBoxLayout(self)
         layout.setSpacing(12)
 
         lbl = QLabel("Review AI Improvement Proposal")
-        lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+        lbl.setStyleSheet("font-size: 16px; font-weight: 700;")
         layout.addWidget(lbl)
 
         rat_lbl = QLabel(f"💡 {rationale}")
         rat_lbl.setWordWrap(True)
-        rat_lbl.setStyleSheet("font-size: 12px; color: #818CF8; background-color: #1E1B4B; padding: 8px; border-radius: 6px;")
+        rat_lbl.setStyleSheet("font-size: 12px; color: #818CF8; background-color: rgba(99, 102, 241, 0.15); padding: 8px; border-radius: 6px;")
         layout.addWidget(rat_lbl)
 
         diff_box = QHBoxLayout()
@@ -57,7 +56,6 @@ class AIApprovalDialog(QDialog):
         orig_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #94A3B8;")
         self.orig_edit = QTextEdit(original)
         self.orig_edit.setReadOnly(True)
-        self.orig_edit.setStyleSheet("background-color: #0F172A; color: #94A3B8; border: 1px solid #334155; border-radius: 6px;")
         orig_box.addWidget(orig_lbl)
         orig_box.addWidget(self.orig_edit)
         diff_box.addLayout(orig_box)
@@ -67,7 +65,6 @@ class AIApprovalDialog(QDialog):
         sugg_lbl = QLabel("Suggested Enhancement:")
         sugg_lbl.setStyleSheet("font-size: 12px; font-weight: 600; color: #10B981;")
         self.sugg_edit = QTextEdit(suggested)
-        self.sugg_edit.setStyleSheet("background-color: #0F172A; color: #F8FAFC; border: 1.5px solid #10B981; border-radius: 6px;")
         sugg_box.addWidget(sugg_lbl)
         sugg_box.addWidget(self.sugg_edit)
         diff_box.addLayout(sugg_box)
@@ -76,11 +73,11 @@ class AIApprovalDialog(QDialog):
         btn_box = QHBoxLayout()
         btn_box.addStretch()
         cancel_btn = QPushButton("Decline")
-        cancel_btn.setStyleSheet("background-color: #334155; color: #FFFFFF; padding: 8px 16px; border-radius: 6px;")
+        cancel_btn.setProperty("class", "SecondaryBtn")
         cancel_btn.clicked.connect(self.reject)
         
         apply_btn = QPushButton("✓ Apply Changes")
-        apply_btn.setStyleSheet("background-color: #10B981; color: #FFFFFF; font-weight: 700; padding: 8px 20px; border-radius: 6px;")
+        apply_btn.setProperty("class", "PrimaryBtn")
         apply_btn.clicked.connect(self.accept)
 
         btn_box.addWidget(cancel_btn)
@@ -102,13 +99,13 @@ class WorkspaceView(QWidget):
         self.ai = AIService()
 
         # Undo / Redo stacks
-        self.undo_stack: List[str] = [] # stores serialized JSON
+        self.undo_stack: List[str] = []
         self.redo_stack: List[str] = []
         self._is_undoing_or_redoing = False
         self._is_loading = False
 
         self._auto_save_timer = QTimer(self)
-        self._auto_save_timer.setInterval(1500)
+        self._auto_save_timer.setInterval(1200)
         self._auto_save_timer.setSingleShot(True)
         self._auto_save_timer.timeout.connect(self._auto_save)
 
@@ -121,25 +118,19 @@ class WorkspaceView(QWidget):
 
         # Top Action & Status Bar
         top_bar = QFrame()
-        top_bar.setStyleSheet("""
-            QFrame {
-                background-color: #0B0F19;
-                border-bottom: 1px solid #1E293B;
-                padding: 6px 16px;
-            }
-        """)
+        top_bar.setProperty("class", "TopBar")
         tb_layout = QHBoxLayout(top_bar)
-        tb_layout.setSpacing(12)
+        tb_layout.setContentsMargins(16, 8, 16, 8)
+        tb_layout.setSpacing(10)
 
         back_btn = QPushButton("← Dashboard")
-        back_btn.setStyleSheet("background: transparent; color: #94A3B8; font-weight: 600; border: none; padding: 6px 8px;")
+        back_btn.setProperty("class", "GhostBtn")
         back_btn.clicked.connect(self._on_back)
         tb_layout.addWidget(back_btn)
 
-        # CV Title Edit & Target Role
-        self.name_edit = QLineEdit("Untitled CV")
-        self.name_edit.setFixedWidth(200)
-        self.name_edit.setStyleSheet("font-size: 14px; font-weight: 700; color: #FFFFFF; background: #1E293B; border: 1px solid #334155; padding: 4px 8px; border-radius: 6px;")
+        # CV Title Edit
+        self.name_edit = QLineEdit("My Professional CV")
+        self.name_edit.setFixedWidth(180)
         self.name_edit.textChanged.connect(self._on_title_changed)
         tb_layout.addWidget(self.name_edit)
 
@@ -152,21 +143,31 @@ class WorkspaceView(QWidget):
         tb_layout.addWidget(self.tpl_combo)
 
         # Accent Color Selector
-        tb_layout.addWidget(QLabel("Palette:"))
+        tb_layout.addWidget(QLabel("Color:"))
         self.color_combo = QComboBox()
         for p in COLOR_PALETTES.keys():
             self.color_combo.addItem(p, p)
         self.color_combo.currentIndexChanged.connect(self._on_palette_changed)
         tb_layout.addWidget(self.color_combo)
 
+        # Font Selector
+        tb_layout.addWidget(QLabel("Font:"))
+        self.font_combo = QComboBox()
+        for f in AVAILABLE_FONTS:
+            self.font_combo.addItem(f, f)
+        self.font_combo.currentIndexChanged.connect(self._on_font_changed)
+        tb_layout.addWidget(self.font_combo)
+
         # Undo / Redo
         self.undo_btn = QPushButton("↶")
+        self.undo_btn.setProperty("class", "SecondaryBtn")
         self.undo_btn.setFixedSize(28, 28)
         self.undo_btn.setToolTip("Undo (Ctrl+Z)")
         self.undo_btn.clicked.connect(self.undo)
         tb_layout.addWidget(self.undo_btn)
 
         self.redo_btn = QPushButton("↷")
+        self.redo_btn.setProperty("class", "SecondaryBtn")
         self.redo_btn.setFixedSize(28, 28)
         self.redo_btn.setToolTip("Redo (Ctrl+Y)")
         self.redo_btn.clicked.connect(self.redo)
@@ -181,13 +182,19 @@ class WorkspaceView(QWidget):
 
         # Tailor / ATS Button
         tailor_btn = QPushButton("🎯 Tailor to Job")
-        tailor_btn.setStyleSheet("background-color: #312E81; color: #C7D2FE; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid #4338CA;")
+        tailor_btn.setProperty("class", "SecondaryBtn")
         tailor_btn.clicked.connect(lambda: self.tailor_requested.emit(self.cv.id if self.cv else ""))
         tb_layout.addWidget(tailor_btn)
 
+        # Print Button
+        print_btn = QPushButton("🖨️ Print")
+        print_btn.setProperty("class", "SecondaryBtn")
+        print_btn.clicked.connect(self.print_pdf)
+        tb_layout.addWidget(print_btn)
+
         # Export PDF Button
         export_btn = QPushButton("Export PDF")
-        export_btn.setStyleSheet("background-color: #4F46E5; color: #FFFFFF; font-weight: 700; padding: 6px 16px; border-radius: 6px; border: none;")
+        export_btn.setProperty("class", "PrimaryBtn")
         export_btn.clicked.connect(self.export_pdf)
         tb_layout.addWidget(export_btn)
 
@@ -199,58 +206,39 @@ class WorkspaceView(QWidget):
         body_layout.setContentsMargins(0, 0, 0, 0)
         body_layout.setSpacing(0)
 
-        # COLUMN 1: Section Navigation List
+        # COLUMN 1: Section Navigation List & Completion
         col1 = QFrame()
-        col1.setFixedWidth(200)
-        col1.setStyleSheet("background-color: #0B0F19; border-right: 1px solid #1E293B;")
+        col1.setObjectName("WorkspaceSidebar")
+        col1.setFixedWidth(210)
         c1_layout = QVBoxLayout(col1)
-        c1_layout.setContentsMargins(8, 12, 8, 12)
-        c1_layout.setSpacing(6)
+        c1_layout.setContentsMargins(10, 12, 10, 12)
+        c1_layout.setSpacing(8)
 
+        c1_hdr_box = QHBoxLayout()
         c1_title = QLabel("SECTIONS")
-        c1_title.setStyleSheet("font-size: 11px; font-weight: 700; color: #64748B; padding-left: 8px; letter-spacing: 0.5px;")
-        c1_layout.addWidget(c1_title)
+        c1_title.setProperty("class", "FieldLabel")
+        c1_hdr_box.addWidget(c1_title)
+        c1_hdr_box.addStretch()
+
+        c1_layout.addLayout(c1_hdr_box)
 
         self.sec_list = QListWidget()
-        self.sec_list.setStyleSheet("""
-            QListWidget {
-                background: transparent;
-                border: none;
-                outline: none;
-            }
-            QListWidget::item {
-                color: #94A3B8;
-                padding: 10px 12px;
-                border-radius: 8px;
-                font-weight: 500;
-                margin-bottom: 2px;
-            }
-            QListWidget::item:hover {
-                background-color: #1E293B;
-                color: #FFFFFF;
-            }
-            QListWidget::item:selected {
-                background-color: #4F46E5;
-                color: #FFFFFF;
-                font-weight: 700;
-            }
-        """)
-
-        sections = [
-            ("Personal Info", "👤"),
-            ("Summary", "📝"),
-            ("Experience", "💼"),
-            ("Education", "🎓"),
-            ("Skills", "⚡"),
-            ("Projects", "🚀"),
-            ("Certifications", "📜"),
-            ("Languages", "🌐"),
-            ("Achievements", "🏆"),
-            ("Volunteer", "🤝"),
-            ("References", "👥"),
-            ("Custom Sections", "✨")
+        self.section_defs = [
+            ("personal", "Personal Info", "👤"),
+            ("summary", "Summary", "📝"),
+            ("experience", "Experience", "💼"),
+            ("education", "Education", "🎓"),
+            ("skills", "Skills", "⚡"),
+            ("projects", "Projects", "🚀"),
+            ("certifications", "Certifications", "📜"),
+            ("languages", "Languages", "🌐"),
+            ("achievements", "Achievements", "🏆"),
+            ("volunteer", "Volunteer", "🤝"),
+            ("references", "References", "👥"),
+            ("custom", "Custom Sections", "✨")
         ]
-        for name, icon in sections:
+
+        for sec_key, name, icon in self.section_defs:
             item = QListWidgetItem(f"{icon}  {name}")
             self.sec_list.addItem(item)
         
@@ -261,7 +249,7 @@ class WorkspaceView(QWidget):
 
         # COLUMN 2: Form Editor Stack
         col2 = QFrame()
-        col2.setStyleSheet("background-color: #0F172A;")
+        col2.setProperty("class", "MainContent")
         c2_layout = QVBoxLayout(col2)
         c2_layout.setContentsMargins(16, 16, 16, 16)
 
@@ -302,27 +290,36 @@ class WorkspaceView(QWidget):
         layout.setSpacing(12)
 
         hdr = QLabel("Personal Information")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         layout.addWidget(hdr)
 
-        # Photo row
+        # Photo row & style
         photo_box = QHBoxLayout()
         self.photo_preview = QLabel()
         self.photo_preview.setFixedSize(60, 60)
-        self.photo_preview.setStyleSheet("border-radius: 30px; border: 1.5px dashed #4F46E5; background-color: #1E293B;")
+        self.photo_preview.setStyleSheet("border-radius: 30px; border: 1.5px dashed #4F46E5;")
         self.photo_preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.photo_preview.setText("Photo")
         photo_box.addWidget(self.photo_preview)
 
         upload_btn = QPushButton("Upload Photo")
-        upload_btn.setStyleSheet("background-color: #1E293B; color: #FFFFFF; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px;")
+        upload_btn.setProperty("class", "SecondaryBtn")
         upload_btn.clicked.connect(self._upload_photo)
         photo_box.addWidget(upload_btn)
 
         remove_photo_btn = QPushButton("Remove")
-        remove_photo_btn.setStyleSheet("background-color: transparent; color: #94A3B8; border: none; padding: 6px;")
+        remove_photo_btn.setProperty("class", "GhostBtn")
         remove_photo_btn.clicked.connect(self._remove_photo)
         photo_box.addWidget(remove_photo_btn)
+
+        photo_box.addSpacing(12)
+        photo_box.addWidget(QLabel("Photo Style:"))
+        self.photo_style_combo = QComboBox()
+        self.photo_style_combo.addItem("Circular Badge", "circle")
+        self.photo_style_combo.addItem("Rounded Square", "square")
+        self.photo_style_combo.addItem("Hide Photo in PDF", "none")
+        self.photo_style_combo.currentIndexChanged.connect(self._on_photo_style_changed)
+        photo_box.addWidget(self.photo_style_combo)
 
         photo_box.addStretch()
         layout.addLayout(photo_box)
@@ -361,18 +358,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Professional Summary")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         ai_btn = QPushButton("✨ AI Improve Summary")
-        ai_btn.setStyleSheet("background-color: #312E81; color: #C7D2FE; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid #6366F1;")
+        ai_btn.setProperty("class", "SecondaryBtn")
         ai_btn.clicked.connect(self._ai_improve_summary)
         hdr_row.addWidget(ai_btn)
         layout.addLayout(hdr_row)
 
-        desc = QLabel("Craft a compelling 2-4 sentence overview highlighting your core value and achievements.")
-        desc.setStyleSheet("font-size: 12px; color: #94A3B8;")
+        desc = QLabel("Craft a compelling 2-4 sentence overview highlighting your core value, expertise, and leadership impact.")
+        desc.setProperty("class", "MutedText")
         layout.addWidget(desc)
 
         self.summary_edit = QTextEdit()
@@ -381,9 +378,17 @@ class WorkspaceView(QWidget):
         self.summary_edit.textChanged.connect(self._on_form_change)
         layout.addWidget(self.summary_edit)
 
+        cnt_box = QHBoxLayout()
         self.summary_count_lbl = QLabel("0 characters | 0 words")
-        self.summary_count_lbl.setStyleSheet("font-size: 11px; color: #64748B;")
-        layout.addWidget(self.summary_count_lbl)
+        self.summary_count_lbl.setProperty("class", "MutedText")
+        
+        guidance_lbl = QLabel("💡 Optimal: 50 – 120 words for executive presence")
+        guidance_lbl.setStyleSheet("font-size: 11px; color: #818CF8;")
+        
+        cnt_box.addWidget(self.summary_count_lbl)
+        cnt_box.addStretch()
+        cnt_box.addWidget(guidance_lbl)
+        layout.addLayout(cnt_box)
 
         layout.addStretch()
         self.form_stack.addWidget(page)
@@ -398,18 +403,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Work Experience")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         add_btn = QPushButton("+ Add Position")
-        add_btn.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_btn.setProperty("class", "PrimaryBtn")
         add_btn.clicked.connect(self._add_experience_item)
         hdr_row.addWidget(add_btn)
         self.exp_page_layout.addLayout(hdr_row)
 
         self.exp_container = QVBoxLayout()
-        self.exp_container.setSpacing(14)
+        self.exp_container.setSpacing(12)
         self.exp_page_layout.addLayout(self.exp_container)
 
         self.exp_page_layout.addStretch()
@@ -425,18 +430,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Education")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
-        add_btn = QPushButton("+ Add Degree / School")
-        add_btn.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_btn = QPushButton("+ Add Education")
+        add_btn.setProperty("class", "PrimaryBtn")
         add_btn.clicked.connect(self._add_education_item)
         hdr_row.addWidget(add_btn)
         self.edu_page_layout.addLayout(hdr_row)
 
         self.edu_container = QVBoxLayout()
-        self.edu_container.setSpacing(14)
+        self.edu_container.setSpacing(12)
         self.edu_page_layout.addLayout(self.edu_container)
 
         self.edu_page_layout.addStretch()
@@ -452,12 +457,12 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Skills & Competencies")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         ai_btn = QPushButton("✨ AI Suggest Skills")
-        ai_btn.setStyleSheet("background-color: #312E81; color: #C7D2FE; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid #6366F1;")
+        ai_btn.setProperty("class", "SecondaryBtn")
         ai_btn.clicked.connect(self._ai_suggest_skills)
         hdr_row.addWidget(ai_btn)
         layout.addLayout(hdr_row)
@@ -468,10 +473,10 @@ class WorkspaceView(QWidget):
         self.skill_cat_combo = QComboBox()
         self.skill_cat_combo.addItems(["Technical Skills", "Programming Languages", "Frameworks", "Tools", "Soft Skills"])
         self.skill_prof_combo = QComboBox()
-        self.skill_prof_combo.addItems(["Beginner", "Intermediate", "Advanced", "Expert"])
+        self.skill_prof_combo.addItems(["Expert", "Advanced", "Intermediate", "Beginner"])
         
         add_skill_btn = QPushButton("Add")
-        add_skill_btn.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_skill_btn.setProperty("class", "PrimaryBtn")
         add_skill_btn.clicked.connect(self._add_skill)
 
         add_box.addWidget(self.skill_name_input, stretch=2)
@@ -483,11 +488,10 @@ class WorkspaceView(QWidget):
         # Skills list
         self.skills_list_widget = QListWidget()
         self.skills_list_widget.setFixedHeight(260)
-        self.skills_list_widget.setStyleSheet("background: #0F172A; border: 1px solid #334155; border-radius: 8px; padding: 4px;")
         layout.addWidget(self.skills_list_widget)
 
         del_skill_btn = QPushButton("Delete Selected Skill")
-        del_skill_btn.setStyleSheet("background-color: #BE123C; color: white; padding: 6px 12px; border-radius: 6px; max-width: 160px;")
+        del_skill_btn.setProperty("class", "DangerBtn")
         del_skill_btn.clicked.connect(self._delete_skill)
         layout.addWidget(del_skill_btn)
 
@@ -504,18 +508,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Key Projects")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         add_btn = QPushButton("+ Add Project")
-        add_btn.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_btn.setProperty("class", "PrimaryBtn")
         add_btn.clicked.connect(self._add_project_item)
         hdr_row.addWidget(add_btn)
         self.proj_page_layout.addLayout(hdr_row)
 
         self.proj_container = QVBoxLayout()
-        self.proj_container.setSpacing(14)
+        self.proj_container.setSpacing(12)
         self.proj_page_layout.addLayout(self.proj_container)
 
         self.proj_page_layout.addStretch()
@@ -531,17 +535,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Certifications & Licenses")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         add_btn = QPushButton("+ Add Certification")
-        add_btn.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_btn.setProperty("class", "PrimaryBtn")
         add_btn.clicked.connect(self._add_cert_item)
         hdr_row.addWidget(add_btn)
         self.cert_page_layout.addLayout(hdr_row)
 
         self.cert_container = QVBoxLayout()
+        self.cert_container.setSpacing(12)
         self.cert_page_layout.addLayout(self.cert_container)
         self.cert_page_layout.addStretch()
         self.form_stack.addWidget(page)
@@ -555,7 +560,7 @@ class WorkspaceView(QWidget):
         layout.setSpacing(12)
 
         hdr = QLabel("Languages")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         layout.addWidget(hdr)
 
         box = QHBoxLayout()
@@ -564,7 +569,7 @@ class WorkspaceView(QWidget):
         self.lang_prof_combo = QComboBox()
         self.lang_prof_combo.addItems(["Native", "Fluent", "Intermediate", "Conversational", "Basic"])
         add_b = QPushButton("Add")
-        add_b.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_b.setProperty("class", "PrimaryBtn")
         add_b.clicked.connect(self._add_language)
         box.addWidget(self.lang_input, stretch=2)
         box.addWidget(self.lang_prof_combo, stretch=1)
@@ -573,11 +578,10 @@ class WorkspaceView(QWidget):
 
         self.lang_list_widget = QListWidget()
         self.lang_list_widget.setFixedHeight(200)
-        self.lang_list_widget.setStyleSheet("background: #0F172A; border: 1px solid #334155; border-radius: 8px;")
         layout.addWidget(self.lang_list_widget)
 
         del_b = QPushButton("Delete Selected")
-        del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 6px 12px; border-radius: 6px; max-width: 140px;")
+        del_b.setProperty("class", "DangerBtn")
         del_b.clicked.connect(self._delete_language)
         layout.addWidget(del_b)
 
@@ -594,17 +598,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Honors & Achievements")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         add_b = QPushButton("+ Add Achievement")
-        add_b.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_b.setProperty("class", "PrimaryBtn")
         add_b.clicked.connect(self._add_achievement_item)
         hdr_row.addWidget(add_b)
         self.ach_page_layout.addLayout(hdr_row)
 
         self.ach_container = QVBoxLayout()
+        self.ach_container.setSpacing(12)
         self.ach_page_layout.addLayout(self.ach_container)
         self.ach_page_layout.addStretch()
         self.form_stack.addWidget(page)
@@ -619,17 +624,18 @@ class WorkspaceView(QWidget):
 
         hdr_row = QHBoxLayout()
         hdr = QLabel("Volunteer & Community")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         add_b = QPushButton("+ Add Volunteer Entry")
-        add_b.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_b.setProperty("class", "PrimaryBtn")
         add_b.clicked.connect(self._add_volunteer_item)
         hdr_row.addWidget(add_b)
         self.vol_page_layout.addLayout(hdr_row)
 
         self.vol_container = QVBoxLayout()
+        self.vol_container.setSpacing(12)
         self.vol_page_layout.addLayout(self.vol_container)
         self.vol_page_layout.addStretch()
         self.form_stack.addWidget(page)
@@ -643,20 +649,21 @@ class WorkspaceView(QWidget):
         self.ref_page_layout.setSpacing(12)
 
         hdr = QLabel("References")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr.setProperty("class", "SectionHeader")
         self.ref_page_layout.addWidget(hdr)
 
         self.ref_upon_req_chk = QCheckBox("Display 'References available upon request'")
-        self.ref_upon_req_chk.setStyleSheet("font-size: 13px; font-weight: 600; color: #C7D2FE;")
+        self.ref_upon_req_chk.setStyleSheet("font-size: 13px; font-weight: 600;")
         self.ref_upon_req_chk.toggled.connect(self._on_ref_toggle)
         self.ref_page_layout.addWidget(self.ref_upon_req_chk)
 
-        add_b = QPushButton("+ Add Reference Person")
-        add_b.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600; max-width: 180px;")
+        add_b = QPushButton("+ Add Reference Contact")
+        add_b.setProperty("class", "PrimaryBtn")
         add_b.clicked.connect(self._add_ref_item)
         self.ref_page_layout.addWidget(add_b)
 
         self.ref_container = QVBoxLayout()
+        self.ref_container.setSpacing(12)
         self.ref_page_layout.addLayout(self.ref_container)
         self.ref_page_layout.addStretch()
         self.form_stack.addWidget(page)
@@ -670,18 +677,19 @@ class WorkspaceView(QWidget):
         self.cust_page_layout.setSpacing(12)
 
         hdr_row = QHBoxLayout()
-        hdr = QLabel("Custom Sections (e.g. Publications, Patents, Interests)")
-        hdr.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        hdr = QLabel("Custom Sections (Publications, Patents, Awards)")
+        hdr.setProperty("class", "SectionHeader")
         hdr_row.addWidget(hdr)
         hdr_row.addStretch()
 
         add_b = QPushButton("+ Add Custom Section")
-        add_b.setStyleSheet("background-color: #4F46E5; color: white; padding: 6px 14px; border-radius: 6px; font-weight: 600;")
+        add_b.setProperty("class", "PrimaryBtn")
         add_b.clicked.connect(self._add_custom_section)
         hdr_row.addWidget(add_b)
         self.cust_page_layout.addLayout(hdr_row)
 
         self.cust_container = QVBoxLayout()
+        self.cust_container.setSpacing(12)
         self.cust_page_layout.addLayout(self.cust_container)
         self.cust_page_layout.addStretch()
         self.form_stack.addWidget(page)
@@ -707,6 +715,10 @@ class WorkspaceView(QWidget):
         if c_idx >= 0:
             self.color_combo.setCurrentIndex(c_idx)
 
+        f_idx = self.font_combo.findData(cv.customization.font_family)
+        if f_idx >= 0:
+            self.font_combo.setCurrentIndex(f_idx)
+
         # Personal Info Fields
         self.pi_name.setText(cv.personal.full_name)
         self.pi_title.setText(cv.personal.professional_title)
@@ -717,6 +729,10 @@ class WorkspaceView(QWidget):
         self.pi_linkedin.setText(cv.personal.linkedin)
         self.pi_github.setText(cv.personal.github)
         self.pi_portfolio.setText(cv.personal.portfolio)
+        
+        style_idx = self.photo_style_combo.findData(cv.customization.photo_style if cv.customization.show_photo else "none")
+        if style_idx >= 0:
+            self.photo_style_combo.setCurrentIndex(style_idx)
         self._update_photo_preview()
 
         # Summary
@@ -734,11 +750,54 @@ class WorkspaceView(QWidget):
         self._refresh_references_ui()
         self._refresh_custom_sections_ui()
 
+        self._update_section_indicators()
+
         self._is_loading = False
 
         # Trigger preview
         self.sec_list.setCurrentRow(0)
         self.preview_widget.update_preview(self.cv, immediate=True)
+
+    def _update_section_indicators(self):
+        if not self.cv: return
+        indicators = {
+            "personal": bool(self.cv.personal.full_name),
+            "summary": bool(self.cv.summary.strip()),
+            "experience": len(self.cv.experience) > 0,
+            "education": len(self.cv.education) > 0,
+            "skills": len(self.cv.skills) > 0,
+            "projects": len(self.cv.projects) > 0,
+            "certifications": len(self.cv.certifications) > 0,
+            "languages": len(self.cv.languages) > 0,
+            "achievements": len(self.cv.achievements) > 0,
+            "volunteer": len(self.cv.volunteer) > 0,
+            "references": bool(self.cv.references or self.cv.references_on_request),
+            "custom": len(self.cv.custom_sections) > 0
+        }
+
+        counts = {
+            "experience": len(self.cv.experience),
+            "education": len(self.cv.education),
+            "skills": len(self.cv.skills),
+            "projects": len(self.cv.projects),
+            "certifications": len(self.cv.certifications),
+            "languages": len(self.cv.languages),
+            "achievements": len(self.cv.achievements),
+            "volunteer": len(self.cv.volunteer),
+            "references": len(self.cv.references),
+            "custom": len(self.cv.custom_sections)
+        }
+
+        for i in range(self.sec_list.count()):
+            key, name, icon = self.section_defs[i]
+            is_done = indicators.get(key, False)
+            cnt = counts.get(key, 0)
+            
+            cnt_str = f" ({cnt})" if cnt > 0 else ""
+            status_symbol = "✓" if is_done else "•"
+            
+            item = self.sec_list.item(i)
+            item.setText(f"{icon}  {name}{cnt_str}  {status_symbol}")
 
     def _on_section_selected(self, row: int):
         if row >= 0:
@@ -765,12 +824,30 @@ class WorkspaceView(QWidget):
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
+    def _on_font_changed(self, idx: int):
+        if self._is_loading or not self.cv:
+            return
+        self.cv.customization.font_family = self.font_combo.currentData()
+        self._schedule_save()
+        self.preview_widget.update_preview(self.cv)
+
+    def _on_photo_style_changed(self, idx: int):
+        if self._is_loading or not self.cv:
+            return
+        val = self.photo_style_combo.currentData()
+        if val == "none":
+            self.cv.customization.show_photo = False
+        else:
+            self.cv.customization.show_photo = True
+            self.cv.customization.photo_style = val
+        self._schedule_save()
+        self.preview_widget.update_preview(self.cv)
+
     def _add_field(self, layout, label: str, placeholder: str) -> QLineEdit:
         lbl = QLabel(label)
-        lbl.setStyleSheet("font-size: 11px; font-weight: 600; color: #94A3B8;")
+        lbl.setProperty("class", "FieldLabel")
         edit = QLineEdit()
         edit.setPlaceholderText(placeholder)
-        edit.setStyleSheet("background-color: #0F172A; color: #FFFFFF; border: 1px solid #334155; border-radius: 6px; padding: 6px 10px;")
         edit.textChanged.connect(self._on_form_change)
         layout.addWidget(lbl)
         layout.addWidget(edit)
@@ -796,8 +873,9 @@ class WorkspaceView(QWidget):
         self.cv.summary = sum_text
         chars = len(sum_text)
         words = len(sum_text.split())
-        self.summary_count_lbl.setText(f"{chars} characters | {words} words")
+        self.summary_count_lbl.setText(f"{chars} chars | {words} words")
 
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -812,7 +890,7 @@ class WorkspaceView(QWidget):
 
         for exp in self.cv.experience:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 12px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             cl.setSpacing(8)
 
@@ -835,7 +913,7 @@ class WorkspaceView(QWidget):
             s_date.textChanged.connect(lambda txt, e=exp: self._set_exp_field(e, 'start_date', txt))
             
             e_date = QLineEdit(exp.end_date)
-            e_date.setPlaceholderText("End Date (or Current)")
+            e_date.setPlaceholderText("End Date (or Present)")
             e_date.textChanged.connect(lambda txt, e=exp: self._set_exp_field(e, 'end_date', txt))
 
             loc = QLineEdit(exp.location)
@@ -857,13 +935,13 @@ class WorkspaceView(QWidget):
             # Actions Row
             a_row = QHBoxLayout()
             polish_btn = QPushButton("✨ AI Polish Bullets")
-            polish_btn.setStyleSheet("background-color: #312E81; color: #C7D2FE; padding: 4px 10px; border-radius: 4px; font-size: 11px;")
+            polish_btn.setProperty("class", "SecondaryBtn")
             polish_btn.clicked.connect(lambda _, e=exp, r=resp: self._ai_polish_experience(e, r))
             a_row.addWidget(polish_btn)
             a_row.addStretch()
 
             del_btn = QPushButton("Delete")
-            del_btn.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px;")
+            del_btn.setProperty("class", "DangerBtn")
             del_btn.clicked.connect(lambda _, e=exp: self._delete_experience(e))
             a_row.addWidget(del_btn)
             cl.addLayout(a_row)
@@ -871,14 +949,16 @@ class WorkspaceView(QWidget):
             self.exp_container.addWidget(card)
 
     def _set_exp_field(self, exp_item, field_name, value):
+        if self._is_loading: return
         setattr(exp_item, field_name, value)
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
     def _add_experience_item(self):
-        new_exp = ExperienceItem(job_title="Software Engineer", company="Tech Corp", start_date="2022", end_date="Present")
+        new_exp = ExperienceItem(job_title="Software Engineer", company="Company Name", start_date="2022", end_date="Present")
         self.cv.experience.append(new_exp)
         self._refresh_experience_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -886,6 +966,7 @@ class WorkspaceView(QWidget):
         if exp_item in self.cv.experience:
             self.cv.experience.remove(exp_item)
             self._refresh_experience_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -898,7 +979,7 @@ class WorkspaceView(QWidget):
 
         for edu in self.cv.education:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 12px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             cl.setSpacing(6)
 
@@ -927,7 +1008,7 @@ class WorkspaceView(QWidget):
             act_row = QHBoxLayout()
             act_row.addStretch()
             del_b = QPushButton("Delete")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, ed=edu: self._delete_edu(ed))
             act_row.addWidget(del_b)
             cl.addLayout(act_row)
@@ -935,6 +1016,7 @@ class WorkspaceView(QWidget):
             self.edu_container.addWidget(card)
 
     def _set_edu_field(self, edu_item, field_name, value):
+        if self._is_loading: return
         setattr(edu_item, field_name, value)
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
@@ -943,6 +1025,7 @@ class WorkspaceView(QWidget):
         new_edu = EducationItem(degree="Bachelor of Science", institution="University", start_date="2018", end_date="2022")
         self.cv.education.append(new_edu)
         self._refresh_education_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -950,6 +1033,7 @@ class WorkspaceView(QWidget):
         if edu_item in self.cv.education:
             self.cv.education.remove(edu_item)
             self._refresh_education_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -957,7 +1041,7 @@ class WorkspaceView(QWidget):
     def _refresh_skills_ui(self):
         self.skills_list_widget.clear()
         for s in self.cv.skills:
-            item = QListWidgetItem(f"⚡ {s.name}  [{s.category}] — {s.proficiency}")
+            item = QListWidgetItem(f"⚡  {s.name}  [{s.category}] — {s.proficiency}")
             self.skills_list_widget.addItem(item)
 
     def _add_skill(self):
@@ -969,6 +1053,7 @@ class WorkspaceView(QWidget):
         self.cv.skills.append(SkillItem(name=name, category=cat, proficiency=prof))
         self.skill_name_input.clear()
         self._refresh_skills_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -977,6 +1062,7 @@ class WorkspaceView(QWidget):
         if row >= 0 and row < len(self.cv.skills):
             self.cv.skills.pop(row)
             self._refresh_skills_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -989,7 +1075,7 @@ class WorkspaceView(QWidget):
 
         for p in self.cv.projects:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 12px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             cl.setSpacing(6)
 
@@ -1024,7 +1110,7 @@ class WorkspaceView(QWidget):
             act_row = QHBoxLayout()
             act_row.addStretch()
             del_b = QPushButton("Delete")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 10px; border-radius: 4px; font-size: 11px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, pr=p: self._delete_project(pr))
             act_row.addWidget(del_b)
             cl.addLayout(act_row)
@@ -1032,9 +1118,10 @@ class WorkspaceView(QWidget):
             self.proj_container.addWidget(card)
 
     def _add_project_item(self):
-        new_proj = ProjectItem(name="New Project", technologies="Python, React")
+        new_proj = ProjectItem(name="Key Project", technologies="Python, React")
         self.cv.projects.append(new_proj)
         self._refresh_projects_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1042,6 +1129,7 @@ class WorkspaceView(QWidget):
         if p in self.cv.projects:
             self.cv.projects.remove(p)
             self._refresh_projects_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1053,7 +1141,7 @@ class WorkspaceView(QWidget):
                 item.widget().deleteLater()
         for c in self.cv.certifications:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 10px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             cn = QLineEdit(c.name)
             cn.setPlaceholderText("Certificate Name")
@@ -1064,7 +1152,7 @@ class WorkspaceView(QWidget):
             cl.addWidget(cn)
             cl.addWidget(iss)
             del_b = QPushButton("Delete")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; max-width: 80px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, cr=c: self._delete_cert(cr))
             cl.addWidget(del_b)
             self.cert_container.addWidget(card)
@@ -1072,6 +1160,7 @@ class WorkspaceView(QWidget):
     def _add_cert_item(self):
         self.cv.certifications.append(CertificationItem(name="AWS Solutions Architect", issuer="Amazon Web Services", issue_date="2024"))
         self._refresh_certifications_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1079,6 +1168,7 @@ class WorkspaceView(QWidget):
         if cr in self.cv.certifications:
             self.cv.certifications.remove(cr)
             self._refresh_certifications_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1086,7 +1176,7 @@ class WorkspaceView(QWidget):
     def _refresh_languages_ui(self):
         self.lang_list_widget.clear()
         for l in self.cv.languages:
-            self.lang_list_widget.addItem(f"🌐 {l.name} ({l.proficiency})")
+            self.lang_list_widget.addItem(f"🌐  {l.name} ({l.proficiency})")
 
     def _add_language(self):
         name = self.lang_input.text().strip()
@@ -1095,6 +1185,7 @@ class WorkspaceView(QWidget):
         self.cv.languages.append(LanguageItem(name=name, proficiency=prof))
         self.lang_input.clear()
         self._refresh_languages_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1103,6 +1194,7 @@ class WorkspaceView(QWidget):
         if row >= 0 and row < len(self.cv.languages):
             self.cv.languages.pop(row)
             self._refresh_languages_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1114,7 +1206,7 @@ class WorkspaceView(QWidget):
                 item.widget().deleteLater()
         for a in self.cv.achievements:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 10px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             t = QLineEdit(a.title)
             t.setPlaceholderText("Achievement Title")
@@ -1125,7 +1217,7 @@ class WorkspaceView(QWidget):
             cl.addWidget(t)
             cl.addWidget(d)
             del_b = QPushButton("Delete")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; max-width: 80px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, ac=a: self._delete_ach(ac))
             cl.addWidget(del_b)
             self.ach_container.addWidget(card)
@@ -1133,6 +1225,7 @@ class WorkspaceView(QWidget):
     def _add_achievement_item(self):
         self.cv.achievements.append(AchievementItem(title="Hackathon 1st Place", date="2023", description="Winner out of 40 teams"))
         self._refresh_achievements_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1140,6 +1233,7 @@ class WorkspaceView(QWidget):
         if ac in self.cv.achievements:
             self.cv.achievements.remove(ac)
             self._refresh_achievements_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1150,7 +1244,7 @@ class WorkspaceView(QWidget):
             if item.widget(): item.widget().deleteLater()
         for v in self.cv.volunteer:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 10px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             o = QLineEdit(v.organization)
             o.setPlaceholderText("Organization")
@@ -1161,7 +1255,7 @@ class WorkspaceView(QWidget):
             cl.addWidget(o)
             cl.addWidget(r)
             del_b = QPushButton("Delete")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; max-width: 80px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, vl=v: self._delete_vol(vl))
             cl.addWidget(del_b)
             self.vol_container.addWidget(card)
@@ -1169,6 +1263,7 @@ class WorkspaceView(QWidget):
     def _add_volunteer_item(self):
         self.cv.volunteer.append(VolunteerItem(organization="Community Center", role="Mentor"))
         self._refresh_volunteer_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1176,6 +1271,7 @@ class WorkspaceView(QWidget):
         if vl in self.cv.volunteer:
             self.cv.volunteer.remove(vl)
             self._refresh_volunteer_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1187,7 +1283,7 @@ class WorkspaceView(QWidget):
             if item.widget(): item.widget().deleteLater()
         for ref in self.cv.references:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 10px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             n = QLineEdit(ref.name)
             n.setPlaceholderText("Reference Name")
@@ -1202,7 +1298,7 @@ class WorkspaceView(QWidget):
             cl.addWidget(jt)
             cl.addWidget(em)
             del_b = QPushButton("Delete")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; max-width: 80px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, rf=ref: self._delete_ref(rf))
             cl.addWidget(del_b)
             self.ref_container.addWidget(card)
@@ -1210,12 +1306,14 @@ class WorkspaceView(QWidget):
     def _on_ref_toggle(self, checked: bool):
         if self.cv:
             self.cv.references_on_request = checked
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
     def _add_ref_item(self):
         self.cv.references.append(ReferenceItem(name="Jane Doe", job_title="Director", company="Tech Corp", email="jane@example.com"))
         self._refresh_references_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1223,6 +1321,7 @@ class WorkspaceView(QWidget):
         if rf in self.cv.references:
             self.cv.references.remove(rf)
             self._refresh_references_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1233,14 +1332,14 @@ class WorkspaceView(QWidget):
             if item.widget(): item.widget().deleteLater()
         for cs in self.cv.custom_sections:
             card = QFrame()
-            card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 8px; padding: 12px;")
+            card.setProperty("class", "ItemCard")
             cl = QVBoxLayout(card)
             sn = QLineEdit(cs.section_name)
             sn.setPlaceholderText("Custom Section Title (e.g. Publications)")
             sn.textChanged.connect(lambda txt, c=cs: setattr(c, 'section_name', txt))
             cl.addWidget(sn)
             del_b = QPushButton("Delete Section")
-            del_b.setStyleSheet("background-color: #BE123C; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; max-width: 100px;")
+            del_b.setProperty("class", "DangerBtn")
             del_b.clicked.connect(lambda _, c=cs: self._delete_custom_sec(c))
             cl.addWidget(del_b)
             self.cust_container.addWidget(card)
@@ -1248,6 +1347,7 @@ class WorkspaceView(QWidget):
     def _add_custom_section(self):
         self.cv.custom_sections.append(CustomSection(section_name="Publications & Research"))
         self._refresh_custom_sections_ui()
+        self._update_section_indicators()
         self._schedule_save()
         self.preview_widget.update_preview(self.cv)
 
@@ -1255,6 +1355,7 @@ class WorkspaceView(QWidget):
         if c in self.cv.custom_sections:
             self.cv.custom_sections.remove(c)
             self._refresh_custom_sections_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1327,6 +1428,7 @@ class WorkspaceView(QWidget):
                 if not any(existing.name.lower() == s["name"].lower() for existing in self.cv.skills):
                     self.cv.skills.append(SkillItem(**s))
             self._refresh_skills_ui()
+            self._update_section_indicators()
             self._schedule_save()
             self.preview_widget.update_preview(self.cv)
 
@@ -1387,6 +1489,21 @@ class WorkspaceView(QWidget):
             PDFService.export_pdf_file(self.cv, file_path)
             self.repo.record_export(self.cv.id, self.cv.name, file_path)
             QMessageBox.information(self, "Export Successful", f"Your CV has been exported to:\n{file_path}")
+
+    def print_pdf(self):
+        if not self.cv: return
+        import tempfile
+        temp_dir = tempfile.gettempdir()
+        pdf_path = os.path.join(temp_dir, f"{self.cv.name.replace(' ', '_')}_cvcraft_print.pdf")
+        PDFService.export_pdf_file(self.cv, pdf_path)
+        try:
+            if sys.platform == "win32":
+                os.startfile(pdf_path)
+            else:
+                import subprocess
+                subprocess.Popen(["xdg-open", pdf_path])
+        except Exception as e:
+            QMessageBox.information(self, "Print CV", f"Print-ready PDF created at:\n{pdf_path}")
 
     def _on_back(self):
         self._auto_save()
