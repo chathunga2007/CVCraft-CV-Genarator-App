@@ -39,10 +39,10 @@ class DashboardView(QWidget):
         title_box.setSpacing(4)
         
         greeting = QLabel("Good to see you.")
-        greeting.setStyleSheet("font-size: 26px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;")
+        greeting.setProperty("class", "HeaderTitle")
         
         sub = QLabel("Build your next opportunity with CVCraft.")
-        sub.setStyleSheet("font-size: 13px; color: #94A3B8;")
+        sub.setProperty("class", "HeaderSubtitle")
         
         title_box.addWidget(greeting)
         title_box.addWidget(sub)
@@ -52,28 +52,13 @@ class DashboardView(QWidget):
         # Quick Actions in Header
         create_btn = QPushButton("+ Create New CV")
         create_btn.setFixedHeight(38)
-        create_btn.setStyleSheet("""
-            background-color: #4F46E5;
-            color: #FFFFFF;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 8px;
-            padding: 0 16px;
-        """)
+        create_btn.setProperty("class", "PrimaryBtn")
         create_btn.clicked.connect(self.create_cv_requested.emit)
         header_layout.addWidget(create_btn)
 
         import_btn = QPushButton("📥 Import CV")
         import_btn.setFixedHeight(38)
-        import_btn.setStyleSheet("""
-            background-color: #1E293B;
-            color: #E2E8F0;
-            font-size: 13px;
-            font-weight: 500;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 0 14px;
-        """)
+        import_btn.setProperty("class", "SecondaryBtn")
         import_btn.clicked.connect(self.import_cv_requested.emit)
         header_layout.addWidget(import_btn)
 
@@ -136,19 +121,12 @@ class DashboardView(QWidget):
         # Recent CVs Header
         sec_header = QHBoxLayout()
         rec_lbl = QLabel("Recent CVs")
-        rec_lbl.setStyleSheet("font-size: 18px; font-weight: 700; color: #FFFFFF;")
+        rec_lbl.setProperty("class", "SectionHeader")
         sec_header.addWidget(rec_lbl)
         sec_header.addStretch()
 
         demo_btn = QPushButton("✨ Load Demo CV")
-        demo_btn.setStyleSheet("""
-            background-color: transparent;
-            color: #818CF8;
-            font-size: 12px;
-            font-weight: 600;
-            border: none;
-            padding: 4px 8px;
-        """)
+        demo_btn.setProperty("class", "GhostBtn")
         demo_btn.clicked.connect(self.load_demo_requested.emit)
         sec_header.addWidget(demo_btn)
         self.content_layout.addLayout(sec_header)
@@ -187,23 +165,24 @@ class DashboardView(QWidget):
 
         if not cvs:
             empty_card = QFrame()
-            empty_card.setStyleSheet("background-color: #1E293B; border-radius: 12px; border: 1px dashed #334155; padding: 32px;")
+            empty_card.setProperty("class", "Card")
             el = QVBoxLayout(empty_card)
+            el.setContentsMargins(32, 32, 32, 32)
             el.setAlignment(Qt.AlignmentFlag.AlignCenter)
             el.setSpacing(12)
             
             lbl1 = QLabel("No CVs created yet")
-            lbl1.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+            lbl1.setProperty("class", "SectionHeader")
             lbl2 = QLabel("Start from scratch or load a realistic sample developer CV.")
-            lbl2.setStyleSheet("font-size: 12px; color: #94A3B8;")
+            lbl2.setProperty("class", "HeaderSubtitle")
             
             btn_box = QHBoxLayout()
             b1 = QPushButton("Create My First CV")
-            b1.setStyleSheet("background-color: #4F46E5; color: white; padding: 8px 16px; border-radius: 6px; font-weight: 600;")
+            b1.setProperty("class", "PrimaryBtn")
             b1.clicked.connect(self.create_cv_requested.emit)
             
             b2 = QPushButton("Load Demo CV")
-            b2.setStyleSheet("background-color: #312E81; color: #C7D2FE; padding: 8px 16px; border-radius: 6px; font-weight: 600;")
+            b2.setProperty("class", "SecondaryBtn")
             b2.clicked.connect(self.load_demo_requested.emit)
             btn_box.addWidget(b1)
             btn_box.addWidget(b2)
