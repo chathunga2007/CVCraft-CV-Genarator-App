@@ -32,9 +32,9 @@ class JobMatchView(QWidget):
         # Header
         hdr_box = QVBoxLayout()
         title = QLabel("Tailor My CV & ATS Match Engine")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #FFFFFF;")
+        title.setProperty("class", "HeaderTitle")
         sub = QLabel("Paste any job description to calculate keyword coverage, ATS compatibility, and tailoring insights.")
-        sub.setStyleSheet("font-size: 13px; color: #94A3B8;")
+        sub.setProperty("class", "HeaderSubtitle")
         hdr_box.addWidget(title)
         hdr_box.addWidget(sub)
         layout.addLayout(hdr_box)
@@ -61,28 +61,29 @@ class JobMatchView(QWidget):
 
         # Job Description Input Card
         jd_card = QFrame()
-        jd_card.setStyleSheet("background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px;")
+        jd_card.setProperty("class", "Card")
+        jd_card.setContentsMargins(16, 16, 16, 16)
         jd_layout = QVBoxLayout(jd_card)
         jd_lbl = QLabel("Paste Target Job Description (Requirements, Tech Stack, Responsibilities):")
-        jd_lbl.setStyleSheet("font-size: 13px; font-weight: 600; color: #E2E8F0;")
+        jd_lbl.setProperty("class", "FieldLabel")
         jd_layout.addWidget(jd_lbl)
 
         self.jd_input = QTextEdit()
         self.jd_input.setPlaceholderText("Paste the job posting requirements here...")
         self.jd_input.setFixedHeight(140)
-        self.jd_input.setStyleSheet("background-color: #0F172A; color: #F8FAFC; border: 1px solid #334155; border-radius: 8px;")
         jd_layout.addWidget(self.jd_input)
 
         run_btn = QPushButton("🚀 Analyze & Match Keywords")
         run_btn.setFixedHeight(40)
-        run_btn.setStyleSheet("background-color: #4F46E5; color: white; font-weight: 700; border-radius: 8px;")
+        run_btn.setProperty("class", "PrimaryBtn")
         run_btn.clicked.connect(self._run_analysis)
         jd_layout.addWidget(run_btn)
         c_layout.addWidget(jd_card)
 
         # Results Container (Hidden until analyzed)
         self.results_card = QFrame()
-        self.results_card.setStyleSheet("background-color: #162032; border: 1px solid #27354A; border-radius: 12px; padding: 20px;")
+        self.results_card.setProperty("class", "Card")
+        self.results_card.setContentsMargins(20, 20, 20, 20)
         self.res_layout = QVBoxLayout(self.results_card)
         self.res_layout.setSpacing(16)
 
@@ -90,9 +91,9 @@ class JobMatchView(QWidget):
         score_box = QHBoxLayout()
         s_info = QVBoxLayout()
         self.score_title = QLabel("ATS Keyword Coverage Match")
-        self.score_title.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+        self.score_title.setProperty("class", "SectionHeader")
         self.score_sub = QLabel("Score based on technical keywords, required competencies, and job qualifications.")
-        self.score_sub.setStyleSheet("font-size: 12px; color: #94A3B8;")
+        self.score_sub.setProperty("class", "HeaderSubtitle")
         s_info.addWidget(self.score_title)
         s_info.addWidget(self.score_sub)
         score_box.addLayout(s_info)
@@ -106,10 +107,6 @@ class JobMatchView(QWidget):
         self.score_bar = QProgressBar()
         self.score_bar.setFixedHeight(8)
         self.score_bar.setTextVisible(False)
-        self.score_bar.setStyleSheet("""
-            QProgressBar { background-color: #0F172A; border-radius: 4px; }
-            QProgressBar::chunk { background-color: #10B981; border-radius: 4px; }
-        """)
         self.res_layout.addWidget(self.score_bar)
 
         # Matching Keywords Pill Box
@@ -118,7 +115,7 @@ class JobMatchView(QWidget):
         self.res_layout.addWidget(self.matching_lbl)
         self.matching_text = QLabel("None yet")
         self.matching_text.setWordWrap(True)
-        self.matching_text.setStyleSheet("font-size: 12px; color: #E2E8F0; background-color: #0F172A; padding: 10px; border-radius: 8px;")
+        self.matching_text.setProperty("class", "ItemCard")
         self.res_layout.addWidget(self.matching_text)
 
         # Missing Keywords Pill Box
@@ -127,22 +124,22 @@ class JobMatchView(QWidget):
         self.res_layout.addWidget(self.missing_lbl)
         self.missing_text = QLabel("None yet")
         self.missing_text.setWordWrap(True)
-        self.missing_text.setStyleSheet("font-size: 12px; color: #E2E8F0; background-color: #0F172A; padding: 10px; border-radius: 8px;")
+        self.missing_text.setProperty("class", "ItemCard")
         self.res_layout.addWidget(self.missing_text)
 
         # Add missing skills button
         self.add_missing_btn = QPushButton("+ Integrate Missing Keywords into CV Skills")
-        self.add_missing_btn.setStyleSheet("background-color: #312E81; color: #C7D2FE; font-weight: 600; padding: 8px 16px; border-radius: 6px; border: 1px solid #6366F1; max-width: 320px;")
+        self.add_missing_btn.setProperty("class", "PrimaryBtn")
         self.add_missing_btn.clicked.connect(self._add_missing_skills)
         self.res_layout.addWidget(self.add_missing_btn)
 
         # Recommendations Checklist
         rec_title = QLabel("Tailoring & ATS Recommendations:")
-        rec_title.setStyleSheet("font-size: 13px; font-weight: 600; color: #FFFFFF; margin-top: 10px;")
+        rec_title.setProperty("class", "SectionHeader")
         self.res_layout.addWidget(rec_title)
         self.rec_text = QLabel("")
         self.rec_text.setWordWrap(True)
-        self.rec_text.setStyleSheet("font-size: 12px; color: #CBD5E1; line-height: 1.4;")
+        self.rec_text.setProperty("class", "MutedText")
         self.res_layout.addWidget(self.rec_text)
 
         c_layout.addWidget(self.results_card)
