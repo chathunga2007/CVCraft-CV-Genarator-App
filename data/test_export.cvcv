@@ -1,14 +1,14 @@
 {
   "signature": "CVCRAFT_DOCUMENT_V1",
   "version": "1.0.0",
-  "exported_at": "2026-09-30T00:58:43.942493",
+  "exported_at": "2026-09-30T01:30:35.303557",
   "cv_data": {
-    "id": "b6eee5f9-cdea-405b-92bf-1acfe6a0dcac",
+    "id": "8bfba039-6d54-4307-bb62-f6e42d6bbc33",
     "name": "Alexander Mitchell - Senior Full Stack Engineer",
     "job_target": "Senior Full Stack Engineer & Cloud Architect",
     "template_id": "professional",
-    "created_at": "2026-09-30T00:58:43.675098",
-    "updated_at": "2026-09-30T00:58:43.675451",
+    "created_at": "2026-09-30T01:30:34.894392",
+    "updated_at": "2026-09-30T01:30:34.895335",
     "is_favorite": false,
     "parent_version_id": null,
     "version_label": "Main",
@@ -28,7 +28,7 @@
     "summary": "Innovative and results-driven Senior Full Stack Engineer with 7+ years of experience designing, scaling, and maintaining distributed web applications and high-throughput microservices. Proven track record in reducing cloud infrastructure latency by 42% and orchestrating zero-downtime CI/CD pipelines. Passionate about clean architecture, developer productivity, and building resilient user experiences.",
     "experience": [
       {
-        "id": "1dd6c1fe-8659-410b-9995-9a02eac90b1e",
+        "id": "14a07099-0adf-4d17-a378-61a5ed2af27d",
         "company": "Aetheris Cloud Technologies",
         "job_title": "Lead Software Engineer",
         "location": "San Francisco, CA",
@@ -40,7 +40,7 @@
         "achievements": "Awarded 2024 Tech Innovator of the Year for optimizing caching layers, saving $140,000 in AWS billings annually."
       },
       {
-        "id": "64254c38-6b02-400c-8cbd-2b585bfbbc54",
+        "id": "01ef8a1e-c851-49ab-98be-64872e07cc16",
         "company": "Nexus Velocity Labs",
         "job_title": "Senior Python & Frontend Engineer",
         "location": "Austin, TX (Remote)",
@@ -52,7 +52,7 @@
         "achievements": "Boosted app performance score from 68 to 97 on Lighthouse, elevating user retention by 24%."
       },
       {
-        "id": "752b2d72-ee99-4416-bc04-77a54e948834",
+        "id": "b3ed3253-d97f-4c8f-a9f5-449e445a8f39",
         "company": "Starlight Digital Interactive",
         "job_title": "Software Developer",
         "location": "Seattle, WA",
@@ -66,7 +66,7 @@
     ],
     "education": [
       {
-        "id": "ac430c5e-e2a9-43da-bac2-daf79da02883",
+        "id": "0dce4778-eda2-46b2-94a0-3e098afa330b",
         "institution": "University of California, Berkeley",
         "degree": "Bachelor of Science",
         "field_of_study": "Computer Science & Information Engineering",
@@ -78,73 +78,73 @@
     ],
     "skills": [
       {
-        "id": "6b1e1882-1653-4cbe-a546-6fb9602fc161",
+        "id": "e85f31c5-ee83-4c26-aaa2-0bc37cebad8a",
         "name": "Python (FastAPI, Django, AsyncIO)",
         "category": "Programming Languages",
         "proficiency": "Expert"
       },
       {
-        "id": "ee565ae9-cf08-4c43-bf9a-4d732eb88702",
+        "id": "88d1a256-fdbd-4f43-9e61-6311e667b7f0",
         "name": "TypeScript & Modern JavaScript",
         "category": "Programming Languages",
         "proficiency": "Expert"
       },
       {
-        "id": "799a79dc-8412-4ca3-97fc-906871cbbd05",
+        "id": "8e710887-4fa4-4fe4-9d22-8441a6efb195",
         "name": "Go (Golang)",
         "category": "Programming Languages",
         "proficiency": "Advanced"
       },
       {
-        "id": "76ff9aba-f239-4682-8c47-59ac8c9c4471",
+        "id": "19be7a8c-7da4-44f6-a254-3366159ffbbe",
         "name": "React & Modern UI Frameworks",
         "category": "Frameworks",
         "proficiency": "Expert"
       },
       {
-        "id": "ff525df3-6c99-4681-9edf-7e10da41c3db",
+        "id": "b7674f91-25dd-4a14-995d-170be25ddf4a",
         "name": "PostgreSQL & MongoDB",
         "category": "Tools",
         "proficiency": "Expert"
       },
       {
-        "id": "c8adf241-f944-417b-af6d-73fbaf94427e",
+        "id": "da0f10c1-d4da-4706-a595-9d48781f4b01",
         "name": "Docker & Kubernetes",
         "category": "Tools",
         "proficiency": "Advanced"
       },
       {
-        "id": "60257211-e952-4e59-aaf2-1eff084377e7",
+        "id": "bdbb89a2-3831-4ed0-a455-5cd62996fac2",
         "name": "AWS (Lambda, ECS, S3, CloudFront)",
         "category": "Technical Skills",
         "proficiency": "Advanced"
       },
       {
-        "id": "a3537e0a-26d6-4041-85b8-e41fdc810188",
+        "id": "22a132a2-31ba-428f-8746-c079d23a9e2c",
         "name": "Distributed Systems & Microservices",
         "category": "Technical Skills",
         "proficiency": "Expert"
       },
       {
-        "id": "357504a2-54a6-46fd-a95f-fbd7b39ea126",
+        "id": "b27735b9-55ca-47c3-82e5-0e831fe25f6d",
         "name": "CI/CD & DevOps Automation",
         "category": "Tools",
         "proficiency": "Advanced"
       },
       {
-        "id": "63a1f264-b82e-4b99-8571-26f757675b2d",
+        "id": "4bea2aa6-a416-4d64-8bb3-3dec2585ba8b",
         "name": "System Architecture & Scalability",
         "category": "Technical Skills",
         "proficiency": "Expert"
       },
       {
-        "id": "ce4eed1a-a69b-4515-840f-98b84c8c554b",
+        "id": "b784aba3-066a-42bd-918c-df1b8ab7cbcf",
         "name": "Cross-Functional Leadership & Agile",
         "category": "Soft Skills",
         "proficiency": "Expert"
       },
       {
-        "id": "0d286fc8-e467-43a6-a9f2-a79f15695881",
+        "id": "a7de2d05-1a8f-473c-8ae1-69b4f8e161e9",
         "name": "Strategic Problem Solving",
         "category": "Soft Skills",
         "proficiency": "Expert"
@@ -152,7 +152,7 @@
     ],
     "projects": [
       {
-        "id": "749a4dba-a0df-4a87-a1e5-611a7d5ed6cb",
+        "id": "dea1c81f-0350-48b1-94b3-22f3e2e1e580",
         "name": "StreamPulse Real-Time Telemetry Engine",
         "role": "Creator & Lead Architect",
         "technologies": "Python, WebSockets, Redis, Vue, Docker",
@@ -161,7 +161,7 @@
         "description": "High-frequency telemetry dashboard providing sub-50ms observability for IoT devices across 12 geographic clusters."
       },
       {
-        "id": "e3166ee6-6740-485c-ae48-7ba6dd8d2494",
+        "id": "109d368e-7f48-4f4b-86b3-7244b15d8ae3",
         "name": "OmniAuth Secure SSO Gateway",
         "role": "Principal Developer",
         "technologies": "OAuth2, OpenID Connect, FastAPI, PyJWT",
@@ -172,7 +172,7 @@
     ],
     "certifications": [
       {
-        "id": "49a998c6-e697-448c-87e9-b6eff2b12627",
+        "id": "54dc1c3c-84d8-42ba-91bf-6e9b9e0fdd1c",
         "name": "AWS Certified Solutions Architect – Professional",
         "issuer": "Amazon Web Services",
         "issue_date": "2023",
@@ -181,7 +181,7 @@
         "credential_url": "https://aws.amazon.com/verification"
       },
       {
-        "id": "038cd06c-8c19-4c2a-8364-8d22176afac6",
+        "id": "6f07681d-055d-4c75-8353-ad05a7a87b60",
         "name": "Certified Kubernetes Administrator (CKA)",
         "issuer": "Cloud Native Computing Foundation (CNCF)",
         "issue_date": "2022",
@@ -192,30 +192,30 @@
     ],
     "languages": [
       {
-        "id": "a918d7f0-3b45-4a68-84b2-28c3c49a1ff2",
+        "id": "1d23af09-c874-46a6-a1da-154911b9d1f4",
         "name": "English",
         "proficiency": "Native"
       },
       {
-        "id": "c3264912-ec26-4fa9-8c04-9b6cc786fcd8",
+        "id": "05073cbf-1e94-42dc-82a3-1ef0ff7c54c9",
         "name": "Spanish",
         "proficiency": "Conversational"
       },
       {
-        "id": "054b954e-b956-4e42-b896-367ea18375b0",
+        "id": "61cd3254-bc51-4985-89ff-72f932269429",
         "name": "German",
         "proficiency": "Basic"
       }
     ],
     "achievements": [
       {
-        "id": "4f7161b1-36ed-48f3-b555-f40d2745f518",
+        "id": "07147ea9-63c5-4abb-bb26-459961bc788e",
         "title": "1st Place Winner — Silicon Valley Hackathon 2023",
         "date": "Nov 2023",
         "description": "Developed an offline-first emergency disaster relief coordination platform with peer-to-peer mesh networking."
       },
       {
-        "id": "43136ae2-c2ee-4161-a994-d22e71e4e69c",
+        "id": "8780b093-7cff-4639-9480-e68fd1b2b736",
         "title": "Patent Co-Inventor: Distributed State Synchronization",
         "date": "Mar 2022",
         "description": "Filed US Patent for low-latency decentralized data conflict resolution algorithms."
@@ -223,7 +223,7 @@
     ],
     "volunteer": [
       {
-        "id": "824d0c2f-6442-4079-959e-90111ecc42ac",
+        "id": "e78b822e-c7c3-4b76-8eac-771861558844",
         "organization": "Code for Good Community Mentorship",
         "role": "Volunteer Coding Mentor",
         "start_date": "2020",
@@ -233,7 +233,7 @@
     ],
     "references": [
       {
-        "id": "d6d9933d-dfb4-4347-9001-9b2f171255a0",
+        "id": "24bcd84e-1916-476f-abbe-975b6941603b",
         "name": "Sarah Jenkins",
         "job_title": "VP of Engineering",
         "company": "Aetheris Cloud Technologies",
