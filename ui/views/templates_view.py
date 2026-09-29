@@ -48,20 +48,50 @@ class TemplatesView(QWidget):
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("background: transparent; border: none;")
 
-        grid_widget = QWidget()
-        grid = QGridLayout(grid_widget)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(20)
+        self.grid_widget = QWidget()
+        self.grid = QGridLayout(self.grid_widget)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setSpacing(20)
 
-        cols = 3
+        cols = self._calc_cols()
+        self._current_cols = cols
         for idx, tpl in enumerate(TEMPLATES):
             card = self._create_template_card(tpl)
             r = idx // cols
             c = idx % cols
-            grid.addWidget(card, r, c)
+            self.grid.addWidget(card, r, c)
 
-        scroll.setWidget(grid_widget)
+        scroll.setWidget(self.grid_widget)
         layout.addWidget(scroll)
+
+    def _calc_cols(self) -> int:
+        w = self.width()
+        if w >= 1100:
+            return 3
+        elif w >= 700:
+            return 2
+        else:
+            return 1
+
+    def _relayout_grid(self):
+        cards = []
+        while self.grid.count():
+            item = self.grid.takeAt(0)
+            w = item.widget()
+            if w:
+                cards.append(w)
+        cols = self._calc_cols()
+        for idx, card in enumerate(cards):
+            r = idx // cols
+            c = idx % cols
+            self.grid.addWidget(card, r, c)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_cols = self._calc_cols()
+        if getattr(self, "_current_cols", 3) != new_cols:
+            self._current_cols = new_cols
+            self._relayout_grid()
 
     def _create_template_card(self, tpl: dict) -> QFrame:
         card = QFrame()
