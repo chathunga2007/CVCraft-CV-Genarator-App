@@ -187,12 +187,21 @@ class LivePreviewWidget(QFrame):
             self.zoom_lbl.setText(f"{int(self.zoom_factor * 100)}%")
             self._display_current_page()
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, '_resize_fit_timer'):
+            self._resize_fit_timer = QTimer(self)
+            self._resize_fit_timer.setSingleShot(True)
+            self._resize_fit_timer.setInterval(80)
+            self._resize_fit_timer.timeout.connect(self._fit_to_width)
+        self._resize_fit_timer.start()
+
     def _fit_to_width(self):
         if not self.pil_pages:
             return
-        scroll_w = self.scroll_area.viewport().width() - 40
+        scroll_w = self.scroll_area.viewport().width() - 36
         img_w = self.pil_pages[self.current_page_idx].width
-        if img_w > 0:
-            self.zoom_factor = max(0.4, min(1.8, scroll_w / img_w))
+        if img_w > 0 and scroll_w > 50:
+            self.zoom_factor = max(0.20, min(1.8, scroll_w / img_w))
             self.zoom_lbl.setText(f"{int(self.zoom_factor * 100)}%")
             self._display_current_page()
