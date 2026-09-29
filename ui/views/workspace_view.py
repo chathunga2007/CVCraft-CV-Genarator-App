@@ -14,7 +14,8 @@ from typing import Optional, List, Dict, Any
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit,
     QPushButton, QComboBox, QCheckBox, QScrollArea, QFrame, QFileDialog,
-    QStackedWidget, QMessageBox, QDialog, QListWidget, QListWidgetItem
+    QStackedWidget, QMessageBox, QDialog, QListWidget, QListWidgetItem,
+    QSplitter
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QPixmap
@@ -130,13 +131,15 @@ class WorkspaceView(QWidget):
 
         # CV Title Edit
         self.name_edit = QLineEdit("My Professional CV")
-        self.name_edit.setFixedWidth(180)
+        self.name_edit.setMinimumWidth(110)
+        self.name_edit.setMaximumWidth(150)
         self.name_edit.textChanged.connect(self._on_title_changed)
         tb_layout.addWidget(self.name_edit)
 
         # Template Selector
         tb_layout.addWidget(QLabel("Template:"))
         self.tpl_combo = QComboBox()
+        self.tpl_combo.setMaximumWidth(115)
         for t in TEMPLATES:
             self.tpl_combo.addItem(t["name"], t["id"])
         self.tpl_combo.currentIndexChanged.connect(self._on_template_changed)
@@ -145,6 +148,7 @@ class WorkspaceView(QWidget):
         # Accent Color Selector
         tb_layout.addWidget(QLabel("Color:"))
         self.color_combo = QComboBox()
+        self.color_combo.setMaximumWidth(95)
         for p in COLOR_PALETTES.keys():
             self.color_combo.addItem(p, p)
         self.color_combo.currentIndexChanged.connect(self._on_palette_changed)
@@ -153,6 +157,7 @@ class WorkspaceView(QWidget):
         # Font Selector
         tb_layout.addWidget(QLabel("Font:"))
         self.font_combo = QComboBox()
+        self.font_combo.setMaximumWidth(95)
         for f in AVAILABLE_FONTS:
             self.font_combo.addItem(f, f)
         self.font_combo.currentIndexChanged.connect(self._on_font_changed)
@@ -178,17 +183,50 @@ class WorkspaceView(QWidget):
         self.status_lbl.setStyleSheet("font-size: 11px; color: #10B981; font-weight: 600;")
         tb_layout.addWidget(self.status_lbl)
 
+        # View Mode Switcher
+        mode_frame = QFrame()
+        mode_layout = QHBoxLayout(mode_frame)
+        mode_layout.setContentsMargins(0, 0, 0, 0)
+        mode_layout.setSpacing(2)
+
+        self.btn_mode_form = QPushButton("📝 Form")
+        self.btn_mode_form.setProperty("class", "GhostBtn")
+        self.btn_mode_form.setCheckable(True)
+        self.btn_mode_form.setToolTip("Form Editor View Only")
+        self.btn_mode_form.clicked.connect(lambda: self._set_view_mode("form"))
+
+        self.btn_mode_split = QPushButton("🌓 Split")
+        self.btn_mode_split.setProperty("class", "GhostBtn")
+        self.btn_mode_split.setCheckable(True)
+        self.btn_mode_split.setChecked(True)
+        self.btn_mode_split.setToolTip("Side-by-Side Form & Live Preview")
+        self.btn_mode_split.clicked.connect(lambda: self._set_view_mode("split"))
+
+        self.btn_mode_preview = QPushButton("📄 Preview")
+        self.btn_mode_preview.setProperty("class", "GhostBtn")
+        self.btn_mode_preview.setCheckable(True)
+        self.btn_mode_preview.setToolTip("Full Document Preview")
+        self.btn_mode_preview.clicked.connect(lambda: self._set_view_mode("preview"))
+
+        mode_layout.addWidget(self.btn_mode_form)
+        mode_layout.addWidget(self.btn_mode_split)
+        mode_layout.addWidget(self.btn_mode_preview)
+        tb_layout.addWidget(mode_frame)
+
         tb_layout.addStretch()
 
         # Tailor / ATS Button
-        tailor_btn = QPushButton("🎯 Tailor to Job")
+        tailor_btn = QPushButton("🎯 Tailor")
         tailor_btn.setProperty("class", "SecondaryBtn")
+        tailor_btn.setToolTip("Tailor CV to Job Description")
         tailor_btn.clicked.connect(lambda: self.tailor_requested.emit(self.cv.id if self.cv else ""))
         tb_layout.addWidget(tailor_btn)
 
         # Print Button
-        print_btn = QPushButton("🖨️ Print")
+        print_btn = QPushButton("🖨️")
         print_btn.setProperty("class", "SecondaryBtn")
+        print_btn.setFixedSize(32, 28)
+        print_btn.setToolTip("Print CV")
         print_btn.clicked.connect(self.print_pdf)
         tb_layout.addWidget(print_btn)
 
@@ -207,18 +245,25 @@ class WorkspaceView(QWidget):
         body_layout.setSpacing(0)
 
         # COLUMN 1: Section Navigation List & Completion
-        col1 = QFrame()
-        col1.setObjectName("WorkspaceSidebar")
-        col1.setFixedWidth(210)
-        c1_layout = QVBoxLayout(col1)
-        c1_layout.setContentsMargins(10, 12, 10, 12)
+        self.col1 = QFrame()
+        self.col1.setObjectName("WorkspaceSidebar")
+        self.col1.setFixedWidth(175)
+        c1_layout = QVBoxLayout(self.col1)
+        c1_layout.setContentsMargins(8, 12, 8, 12)
         c1_layout.setSpacing(8)
 
         c1_hdr_box = QHBoxLayout()
-        c1_title = QLabel("SECTIONS")
-        c1_title.setProperty("class", "FieldLabel")
-        c1_hdr_box.addWidget(c1_title)
+        self.c1_title = QLabel("SECTIONS")
+        self.c1_title.setProperty("class", "FieldLabel")
+        c1_hdr_box.addWidget(self.c1_title)
         c1_hdr_box.addStretch()
+
+        self.col1_toggle = QPushButton("◀")
+        self.col1_toggle.setFixedSize(24, 24)
+        self.col1_toggle.setProperty("class", "GhostBtn")
+        self.col1_toggle.setToolTip("Collapse Sections Panel")
+        self.col1_toggle.clicked.connect(self._toggle_sections)
+        c1_hdr_box.addWidget(self.col1_toggle)
 
         c1_layout.addLayout(c1_hdr_box)
 
@@ -245,13 +290,14 @@ class WorkspaceView(QWidget):
         self.sec_list.currentRowChanged.connect(self._on_section_selected)
         c1_layout.addWidget(self.sec_list)
         
-        body_layout.addWidget(col1)
+        body_layout.addWidget(self.col1)
 
         # COLUMN 2: Form Editor Stack
-        col2 = QFrame()
-        col2.setProperty("class", "MainContent")
-        c2_layout = QVBoxLayout(col2)
-        c2_layout.setContentsMargins(16, 16, 16, 16)
+        self.col2 = QFrame()
+        self.col2.setProperty("class", "MainContent")
+        self.col2.setMinimumWidth(280)
+        c2_layout = QVBoxLayout(self.col2)
+        c2_layout.setContentsMargins(14, 14, 14, 14)
 
         scroll_form = QScrollArea()
         scroll_form.setWidgetResizable(True)
@@ -273,12 +319,21 @@ class WorkspaceView(QWidget):
 
         scroll_form.setWidget(self.form_stack)
         c2_layout.addWidget(scroll_form)
-        body_layout.addWidget(col2, stretch=5)
 
         # COLUMN 3: Live Preview
         self.preview_widget = LivePreviewWidget()
-        body_layout.addWidget(self.preview_widget, stretch=6)
+        self.preview_widget.setMinimumWidth(260)
 
+        # Responsive Splitter between Form Editor and Live Preview
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.addWidget(self.col2)
+        self.splitter.addWidget(self.preview_widget)
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([460, 520])
+
+        body_layout.addWidget(self.splitter, stretch=1)
         main_layout.addWidget(body)
 
     # =========================================================================
@@ -756,6 +811,8 @@ class WorkspaceView(QWidget):
 
         # Trigger preview
         self.sec_list.setCurrentRow(0)
+        if not hasattr(self, "current_view_mode"):
+            self._set_view_mode("split")
         self.preview_widget.update_preview(self.cv, immediate=True)
 
     def _update_section_indicators(self):
@@ -1508,3 +1565,45 @@ class WorkspaceView(QWidget):
     def _on_back(self):
         self._auto_save()
         self.back_requested.emit()
+
+    def _toggle_sections(self):
+        self._sections_collapsed = not getattr(self, "_sections_collapsed", False)
+        if self._sections_collapsed:
+            self.sec_list.hide()
+            self.c1_title.hide()
+            self.col1.setFixedWidth(36)
+            self.col1_toggle.setText("▶")
+            self.col1_toggle.setToolTip("Expand Sections Panel")
+        else:
+            self.sec_list.show()
+            self.c1_title.show()
+            self.col1.setFixedWidth(175)
+            self.col1_toggle.setText("◀")
+            self.col1_toggle.setToolTip("Collapse Sections Panel")
+        QTimer.singleShot(60, self.preview_widget._fit_to_width)
+
+    def _set_view_mode(self, mode: str):
+        self.current_view_mode = mode
+        self.btn_mode_form.setChecked(mode == "form")
+        self.btn_mode_split.setChecked(mode == "split")
+        self.btn_mode_preview.setChecked(mode == "preview")
+
+        if mode == "form":
+            self.col2.show()
+            self.preview_widget.hide()
+        elif mode == "preview":
+            self.col2.hide()
+            self.preview_widget.show()
+            QTimer.singleShot(60, self.preview_widget._fit_to_width)
+        else:  # split
+            self.col2.show()
+            self.preview_widget.show()
+            total_w = self.splitter.width()
+            if total_w > 400:
+                half = total_w // 2
+                self.splitter.setSizes([half, half])
+            QTimer.singleShot(60, self.preview_widget._fit_to_width)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        QTimer.singleShot(80, self.preview_widget._fit_to_width)
