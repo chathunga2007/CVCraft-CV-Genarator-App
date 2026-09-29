@@ -37,7 +37,8 @@ def main():
         app.setWindowIcon(QIcon(str(ico_path)))
 
     # Set refined font with standard point size
-    font = QFont("Segoe UI", 10)
+    font = QFont("Segoe UI")
+    font.setPointSize(10)
     font.setStyleHint(QFont.StyleHint.SansSerif)
     app.setFont(font)
 
@@ -57,7 +58,7 @@ def main():
     def launch_main_window():
         nonlocal main_win
         main_win = MainWindow()
-        main_win.showMaximized()
+        main_win.show()
         splash.close()
 
     splash.finished.connect(launch_main_window)
