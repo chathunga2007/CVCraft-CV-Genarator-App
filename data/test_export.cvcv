@@ -1,0 +1,271 @@
+{
+  "signature": "CVCRAFT_DOCUMENT_V1",
+  "version": "1.0.0",
+  "exported_at": "2026-09-30T00:58:43.942493",
+  "cv_data": {
+    "id": "b6eee5f9-cdea-405b-92bf-1acfe6a0dcac",
+    "name": "Alexander Mitchell - Senior Full Stack Engineer",
+    "job_target": "Senior Full Stack Engineer & Cloud Architect",
+    "template_id": "professional",
+    "created_at": "2026-09-30T00:58:43.675098",
+    "updated_at": "2026-09-30T00:58:43.675451",
+    "is_favorite": false,
+    "parent_version_id": null,
+    "version_label": "Main",
+    "personal": {
+      "full_name": "Alexander Mitchell",
+      "professional_title": "Senior Full Stack Engineer & Cloud Architect",
+      "email": "alexander.mitchell@craftmail.dev",
+      "phone": "+1 (555) 234-8901",
+      "location": "San Francisco, CA (Hybrid / Remote)",
+      "website": "https://alexmitchell.tech",
+      "linkedin": "https://linkedin.com/in/alexandermitchell-dev",
+      "github": "https://github.com/alexmitchell-tech",
+      "portfolio": "https://alexmitchell.tech/portfolio",
+      "profile_photo_path": "",
+      "profile_photo_style": "circle"
+    },
+    "summary": "Innovative and results-driven Senior Full Stack Engineer with 7+ years of experience designing, scaling, and maintaining distributed web applications and high-throughput microservices. Proven track record in reducing cloud infrastructure latency by 42% and orchestrating zero-downtime CI/CD pipelines. Passionate about clean architecture, developer productivity, and building resilient user experiences.",
+    "experience": [
+      {
+        "id": "1dd6c1fe-8659-410b-9995-9a02eac90b1e",
+        "company": "Aetheris Cloud Technologies",
+        "job_title": "Lead Software Engineer",
+        "location": "San Francisco, CA",
+        "employment_type": "Full-time",
+        "start_date": "2022 - Present",
+        "end_date": "Current",
+        "is_current": true,
+        "responsibilities": "• Spearheaded architecture of enterprise event-driven data streaming platform processing 80M+ daily events.\n• Directed a cross-functional team of 9 engineers across web, backend, and DevOps domains.\n• Spearheaded migration from monolithic REST backend to gRPC & GraphQL services, slashing payload overhead by 38%.",
+        "achievements": "Awarded 2024 Tech Innovator of the Year for optimizing caching layers, saving $140,000 in AWS billings annually."
+      },
+      {
+        "id": "64254c38-6b02-400c-8cbd-2b585bfbbc54",
+        "company": "Nexus Velocity Labs",
+        "job_title": "Senior Python & Frontend Engineer",
+        "location": "Austin, TX (Remote)",
+        "employment_type": "Full-time",
+        "start_date": "2019",
+        "end_date": "2022",
+        "is_current": false,
+        "responsibilities": "• Engineered reactive user interfaces using modern reactive UI frameworks and optimized WebSocket state sync.\n• Built asynchronous analytics engines and ETL pipelines using Python, FastAPI, Redis, and PostgreSQL.\n• Mentored 6 junior and mid-level developers in automated testing, code reviews, and SOLID design patterns.",
+        "achievements": "Boosted app performance score from 68 to 97 on Lighthouse, elevating user retention by 24%."
+      },
+      {
+        "id": "752b2d72-ee99-4416-bc04-77a54e948834",
+        "company": "Starlight Digital Interactive",
+        "job_title": "Software Developer",
+        "location": "Seattle, WA",
+        "employment_type": "Full-time",
+        "start_date": "2017",
+        "end_date": "2019",
+        "is_current": false,
+        "responsibilities": "• Developed customer-facing portal features and secure payment gateway integrations.\n• Automated unit and integration test suites, lifting code coverage from 52% to 91%.",
+        "achievements": "Designed an automated invoice reconciliation tool that reduced manual accounting audit time by 60 hours monthly."
+      }
+    ],
+    "education": [
+      {
+        "id": "ac430c5e-e2a9-43da-bac2-daf79da02883",
+        "institution": "University of California, Berkeley",
+        "degree": "Bachelor of Science",
+        "field_of_study": "Computer Science & Information Engineering",
+        "start_date": "2013",
+        "end_date": "2017",
+        "grade": "GPA 3.86 / 4.0 (Dean's Honor List)",
+        "description": "Specialized in Distributed Systems, Algorithm Design, and Human-Computer Interaction."
+      }
+    ],
+    "skills": [
+      {
+        "id": "6b1e1882-1653-4cbe-a546-6fb9602fc161",
+        "name": "Python (FastAPI, Django, AsyncIO)",
+        "category": "Programming Languages",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "ee565ae9-cf08-4c43-bf9a-4d732eb88702",
+        "name": "TypeScript & Modern JavaScript",
+        "category": "Programming Languages",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "799a79dc-8412-4ca3-97fc-906871cbbd05",
+        "name": "Go (Golang)",
+        "category": "Programming Languages",
+        "proficiency": "Advanced"
+      },
+      {
+        "id": "76ff9aba-f239-4682-8c47-59ac8c9c4471",
+        "name": "React & Modern UI Frameworks",
+        "category": "Frameworks",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "ff525df3-6c99-4681-9edf-7e10da41c3db",
+        "name": "PostgreSQL & MongoDB",
+        "category": "Tools",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "c8adf241-f944-417b-af6d-73fbaf94427e",
+        "name": "Docker & Kubernetes",
+        "category": "Tools",
+        "proficiency": "Advanced"
+      },
+      {
+        "id": "60257211-e952-4e59-aaf2-1eff084377e7",
+        "name": "AWS (Lambda, ECS, S3, CloudFront)",
+        "category": "Technical Skills",
+        "proficiency": "Advanced"
+      },
+      {
+        "id": "a3537e0a-26d6-4041-85b8-e41fdc810188",
+        "name": "Distributed Systems & Microservices",
+        "category": "Technical Skills",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "357504a2-54a6-46fd-a95f-fbd7b39ea126",
+        "name": "CI/CD & DevOps Automation",
+        "category": "Tools",
+        "proficiency": "Advanced"
+      },
+      {
+        "id": "63a1f264-b82e-4b99-8571-26f757675b2d",
+        "name": "System Architecture & Scalability",
+        "category": "Technical Skills",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "ce4eed1a-a69b-4515-840f-98b84c8c554b",
+        "name": "Cross-Functional Leadership & Agile",
+        "category": "Soft Skills",
+        "proficiency": "Expert"
+      },
+      {
+        "id": "0d286fc8-e467-43a6-a9f2-a79f15695881",
+        "name": "Strategic Problem Solving",
+        "category": "Soft Skills",
+        "proficiency": "Expert"
+      }
+    ],
+    "projects": [
+      {
+        "id": "749a4dba-a0df-4a87-a1e5-611a7d5ed6cb",
+        "name": "StreamPulse Real-Time Telemetry Engine",
+        "role": "Creator & Lead Architect",
+        "technologies": "Python, WebSockets, Redis, Vue, Docker",
+        "github_url": "https://github.com/alexmitchell-tech/streampulse",
+        "live_demo_url": "https://streampulse.demo.dev",
+        "description": "High-frequency telemetry dashboard providing sub-50ms observability for IoT devices across 12 geographic clusters."
+      },
+      {
+        "id": "e3166ee6-6740-485c-ae48-7ba6dd8d2494",
+        "name": "OmniAuth Secure SSO Gateway",
+        "role": "Principal Developer",
+        "technologies": "OAuth2, OpenID Connect, FastAPI, PyJWT",
+        "github_url": "https://github.com/alexmitchell-tech/omniauth-gateway",
+        "live_demo_url": "",
+        "description": "Lightweight microservices authentication bridge supporting RBAC, multi-factor biometric auth, and rate-limiting."
+      }
+    ],
+    "certifications": [
+      {
+        "id": "49a998c6-e697-448c-87e9-b6eff2b12627",
+        "name": "AWS Certified Solutions Architect – Professional",
+        "issuer": "Amazon Web Services",
+        "issue_date": "2023",
+        "expiration_date": "2026",
+        "credential_id": "AWS-PSA-8890214",
+        "credential_url": "https://aws.amazon.com/verification"
+      },
+      {
+        "id": "038cd06c-8c19-4c2a-8364-8d22176afac6",
+        "name": "Certified Kubernetes Administrator (CKA)",
+        "issuer": "Cloud Native Computing Foundation (CNCF)",
+        "issue_date": "2022",
+        "expiration_date": "2025",
+        "credential_id": "CKA-992104",
+        "credential_url": ""
+      }
+    ],
+    "languages": [
+      {
+        "id": "a918d7f0-3b45-4a68-84b2-28c3c49a1ff2",
+        "name": "English",
+        "proficiency": "Native"
+      },
+      {
+        "id": "c3264912-ec26-4fa9-8c04-9b6cc786fcd8",
+        "name": "Spanish",
+        "proficiency": "Conversational"
+      },
+      {
+        "id": "054b954e-b956-4e42-b896-367ea18375b0",
+        "name": "German",
+        "proficiency": "Basic"
+      }
+    ],
+    "achievements": [
+      {
+        "id": "4f7161b1-36ed-48f3-b555-f40d2745f518",
+        "title": "1st Place Winner — Silicon Valley Hackathon 2023",
+        "date": "Nov 2023",
+        "description": "Developed an offline-first emergency disaster relief coordination platform with peer-to-peer mesh networking."
+      },
+      {
+        "id": "43136ae2-c2ee-4161-a994-d22e71e4e69c",
+        "title": "Patent Co-Inventor: Distributed State Synchronization",
+        "date": "Mar 2022",
+        "description": "Filed US Patent for low-latency decentralized data conflict resolution algorithms."
+      }
+    ],
+    "volunteer": [
+      {
+        "id": "824d0c2f-6442-4079-959e-90111ecc42ac",
+        "organization": "Code for Good Community Mentorship",
+        "role": "Volunteer Coding Mentor",
+        "start_date": "2020",
+        "end_date": "Present",
+        "description": "Mentored over 35 underrepresented high school students in fundamental programming and web development."
+      }
+    ],
+    "references": [
+      {
+        "id": "d6d9933d-dfb4-4347-9001-9b2f171255a0",
+        "name": "Sarah Jenkins",
+        "job_title": "VP of Engineering",
+        "company": "Aetheris Cloud Technologies",
+        "email": "s.jenkins@aetheris.dev",
+        "phone": "+1 (555) 987-6543"
+      }
+    ],
+    "references_on_request": true,
+    "custom_sections": [],
+    "section_order": [
+      "summary",
+      "experience",
+      "education",
+      "skills",
+      "projects",
+      "certifications",
+      "languages",
+      "achievements",
+      "volunteer",
+      "references",
+      "custom"
+    ],
+    "customization": {
+      "accent_palette": "Deep Indigo",
+      "custom_accent_hex": "#4F46E5",
+      "font_family": "Helvetica",
+      "font_size": "medium",
+      "line_height": 1.3,
+      "section_spacing": 14,
+      "page_margin": 36,
+      "show_photo": true,
+      "photo_style": "circle"
+    }
+  }
+}

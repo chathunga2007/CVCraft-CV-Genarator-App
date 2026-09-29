@@ -1,0 +1,381 @@
+"""
+CVCraft Main Window
+The central desktop application shell coordinating navigation, router,
+shortcuts, theme switching, and global actions.
+"""
+
+from pathlib import Path
+from typing import Optional
+
+from PyQt6.QtWidgets import (
+    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QPushButton,
+    QStackedWidget, QLabel, QFileDialog, QMessageBox, QInputDialog, QFrame
+)
+from PyQt6.QtGui import QIcon, QKeySequence, QShortcut
+from PyQt6.QtCore import Qt
+
+from config import LOGO_PATH, APP_NAME, APP_VERSION, ASSETS_DIR
+from repositories.cv_repository import CVRepository
+from repositories.settings_repository import SettingsRepository
+from services.cv_service import CVService
+from services.import_export import ImportExportService
+from services.pdf_service import PDFService
+from models.cv_model import CVDocument
+from ui.theme import get_stylesheet
+from ui.components.logo_widget import LogoWidget
+from ui.components.toast import Toast
+
+from ui.views.splash_view import SplashView
+from ui.views.onboarding_view import OnboardingView
+from ui.views.dashboard_view import DashboardView
+from ui.views.my_cvs_view import MyCVsView
+from ui.views.workspace_view import WorkspaceView
+from ui.views.templates_view import TemplatesView
+from ui.views.job_match_view import JobMatchView
+from ui.views.settings_view import SettingsView
+from ui.views.about_view import AboutView
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle(f"{APP_NAME} — Build. Craft. Get Noticed.")
+        self.resize(1280, 820)
+        self.setMinimumSize(1024, 700)
+
+        # Set Window Icon
+        ico_path = ASSETS_DIR / "cvcraft.ico"
+        if ico_path.exists():
+            self.setWindowIcon(QIcon(str(ico_path)))
+
+        self.cv_repo = CVRepository()
+        self.settings_repo = SettingsRepository()
+
+        # Apply Saved Theme
+        current_theme = self.settings_repo.get("theme", "dark")
+        self.setStyleSheet(get_stylesheet(current_theme))
+
+        # Root Layout
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.root_layout = QHBoxLayout(self.central_widget)
+        self.root_layout.setContentsMargins(0, 0, 0, 0)
+        self.root_layout.setSpacing(0)
+
+        self._setup_sidebar()
+        self._setup_router()
+        self._setup_shortcuts()
+
+        # Toast overlay
+        self.toast = Toast(self)
+
+        # First Launch Check
+        is_first_launch = (self.settings_repo.get("onboarding_completed", "false") != "true")
+        if is_first_launch and self.cv_repo.get_stats()["total_cvs"] == 0:
+            self.router.setCurrentWidget(self.onboarding_view)
+        else:
+            self.show_dashboard()
+
+    def _setup_sidebar(self):
+        self.sidebar = QWidget()
+        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setFixedWidth(230)
+        s_layout = QVBoxLayout(self.sidebar)
+        s_layout.setContentsMargins(14, 18, 14, 18)
+        s_layout.setSpacing(6)
+
+        # Logo Header
+        self.logo_w = LogoWidget(compact=False)
+        s_layout.addWidget(self.logo_w)
+        s_layout.addSpacing(16)
+
+        # Nav Buttons
+        self.nav_btns = {}
+        nav_items = [
+            ("dashboard", "📊  Dashboard"),
+            ("my_cvs", "📁  My CVs"),
+            ("create_cv", "➕  Create CV"),
+            ("templates", "🎨  Templates"),
+            ("job_match", "🎯  Job Match / ATS"),
+            ("settings", "⚙️  Settings"),
+            ("about", "ℹ️  About CVCraft")
+        ]
+
+        for key, text in nav_items:
+            btn = QPushButton(text)
+            btn.setProperty("class", "NavBtn")
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda _, k=key: self._on_nav_clicked(k))
+            s_layout.addWidget(btn)
+            self.nav_btns[key] = btn
+
+        s_layout.addStretch()
+
+        # Bottom Sidebar: Theme toggle, profile info, version
+        bottom_box = QVBoxLayout()
+        bottom_box.setSpacing(6)
+
+        self.theme_toggle_btn = QPushButton("🌓 Toggle Theme")
+        self.theme_toggle_btn.setStyleSheet("background-color: #1E293B; color: #E2E8F0; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; font-size: 11px;")
+        self.theme_toggle_btn.clicked.connect(self._toggle_theme)
+        bottom_box.addWidget(self.theme_toggle_btn)
+
+        profile_lbl = QLabel("● Local Profile • Offline")
+        profile_lbl.setStyleSheet("font-size: 11px; color: #10B981; font-weight: 500;")
+        bottom_box.addWidget(profile_lbl)
+
+        ver_lbl = QLabel(f"{APP_NAME} v{APP_VERSION}")
+        ver_lbl.setStyleSheet("font-size: 10px; color: #64748B;")
+        bottom_box.addWidget(ver_lbl)
+
+        s_layout.addLayout(bottom_box)
+        self.root_layout.addWidget(self.sidebar)
+
+    def _setup_router(self):
+        self.router = QStackedWidget()
+        self.router.setObjectName("MainContent")
+
+        # Views
+        self.onboarding_view = OnboardingView()
+        self.onboarding_view.create_cv_clicked.connect(self.create_new_cv)
+        self.onboarding_view.load_sample_clicked.connect(self.load_demo_cv)
+        self.onboarding_view.explore_templates_clicked.connect(lambda: self._on_nav_clicked("templates"))
+
+        self.dashboard_view = DashboardView(self.cv_repo)
+        self.dashboard_view.create_cv_requested.connect(self.create_new_cv)
+        self.dashboard_view.import_cv_requested.connect(self.import_cv)
+        self.dashboard_view.templates_requested.connect(lambda: self._on_nav_clicked("templates"))
+        self.dashboard_view.load_demo_requested.connect(self.load_demo_cv)
+        self.dashboard_view.edit_cv_requested.connect(self.open_editor)
+        self.dashboard_view.export_cv_requested.connect(self.quick_export_pdf)
+        self.dashboard_view.duplicate_cv_requested.connect(self.duplicate_cv)
+        self.dashboard_view.delete_cv_requested.connect(self.delete_cv)
+        self.dashboard_view.version_cv_requested.connect(self.create_cv_version)
+
+        self.my_cvs_view = MyCVsView(self.cv_repo)
+        self.my_cvs_view.create_cv_requested.connect(self.create_new_cv)
+        self.my_cvs_view.edit_cv_requested.connect(self.open_editor)
+        self.my_cvs_view.export_cv_requested.connect(self.quick_export_pdf)
+        self.my_cvs_view.duplicate_cv_requested.connect(self.duplicate_cv)
+        self.my_cvs_view.version_cv_requested.connect(self.create_cv_version)
+
+        self.workspace_view = WorkspaceView(self.cv_repo)
+        self.workspace_view.back_requested.connect(self.show_dashboard)
+        self.workspace_view.tailor_requested.connect(self.open_tailor_for_cv)
+
+        self.templates_view = TemplatesView()
+        self.templates_view.template_selected.connect(self._on_template_selected)
+
+        self.job_match_view = JobMatchView(self.cv_repo)
+        self.job_match_view.cv_updated.connect(self._on_cv_updated)
+
+        self.settings_view = SettingsView(self.settings_repo)
+        self.settings_view.theme_changed.connect(self._apply_theme)
+
+        self.about_view = AboutView()
+
+        # Add to stack
+        self.router.addWidget(self.onboarding_view)
+        self.router.addWidget(self.dashboard_view)
+        self.router.addWidget(self.my_cvs_view)
+        self.router.addWidget(self.workspace_view)
+        self.router.addWidget(self.templates_view)
+        self.router.addWidget(self.job_match_view)
+        self.router.addWidget(self.settings_view)
+        self.router.addWidget(self.about_view)
+
+        self.root_layout.addWidget(self.router, stretch=1)
+
+    def _setup_shortcuts(self):
+        # Global shortcuts
+        QShortcut(QKeySequence("Ctrl+N"), self, self.create_new_cv)
+        QShortcut(QKeySequence("Ctrl+S"), self, self._save_active_cv)
+        QShortcut(QKeySequence("Ctrl+E"), self, self._export_active_cv)
+        QShortcut(QKeySequence("Ctrl+Z"), self, self.workspace_view.undo)
+        QShortcut(QKeySequence("Ctrl+Y"), self, self.workspace_view.redo)
+
+    def _set_active_nav(self, active_key: str):
+        for k, btn in self.nav_btns.items():
+            btn.setChecked(k == active_key)
+
+    def _on_nav_clicked(self, key: str):
+        self._set_active_nav(key)
+        if key == "dashboard":
+            self.show_dashboard()
+        elif key == "my_cvs":
+            self.my_cvs_view.refresh()
+            self.router.setCurrentWidget(self.my_cvs_view)
+        elif key == "create_cv":
+            self.create_new_cv()
+        elif key == "templates":
+            self.router.setCurrentWidget(self.templates_view)
+        elif key == "job_match":
+            self.job_match_view.refresh()
+            self.router.setCurrentWidget(self.job_match_view)
+        elif key == "settings":
+            self.router.setCurrentWidget(self.settings_view)
+        elif key == "about":
+            self.router.setCurrentWidget(self.about_view)
+
+    def show_dashboard(self):
+        self._set_active_nav("dashboard")
+        self.dashboard_view.refresh()
+        self.router.setCurrentWidget(self.dashboard_view)
+
+    def create_new_cv(self):
+        from models.cv_model import ExperienceItem, EducationItem, SkillItem
+        cv = CVDocument(name="My Professional CV", job_target="Target Role")
+        cv.personal.full_name = "Your Name"
+        cv.personal.professional_title = "Professional Title"
+        cv.summary = "A brief summary of your background, core strengths, and career highlights."
+        cv.experience = [
+            ExperienceItem(
+                company="Company Name",
+                job_title="Job Title",
+                location="City, Country",
+                start_date="2022",
+                end_date="Present",
+                is_current=True,
+                responsibilities="• Spearheaded key projects and delivered measurable outcomes.\n• Collaborated cross-functionally to achieve strategic goals."
+            )
+        ]
+        cv.education = [
+            EducationItem(
+                institution="University Name",
+                degree="Bachelor's Degree",
+                field_of_study="Field of Study",
+                start_date="2018",
+                end_date="2022"
+            )
+        ]
+        cv.skills = [
+            SkillItem(name="Project Management", category="Soft Skills", proficiency="Advanced"),
+            SkillItem(name="Strategic Planning", category="Soft Skills", proficiency="Expert"),
+            SkillItem(name="Core Technical Skill", category="Technical Skills", proficiency="Advanced")
+        ]
+        default_tpl = self.settings_repo.get("default_template", "modern")
+        default_pal = self.settings_repo.get("default_palette", "Deep Indigo")
+        cv.template_id = default_tpl
+        cv.customization.accent_palette = default_pal
+        self.cv_repo.save(cv, completion_pct=45)
+        self.settings_repo.set("onboarding_completed", "true")
+        self.open_editor(cv.id)
+        self.toast.show_message("Created new CV document")
+
+    def load_demo_cv(self):
+        demo_cv = CVService.create_sample_cv()
+        score, _ = CVService.calculate_completion(demo_cv)
+        self.cv_repo.save(demo_cv, completion_pct=score)
+        self.settings_repo.set("onboarding_completed", "true")
+        self.open_editor(demo_cv.id)
+        self.toast.show_message("Loaded realistic Demo CV (Alex Mitchell)")
+
+    def open_editor(self, cv_id: str):
+        cv = self.cv_repo.get_by_id(cv_id)
+        if cv:
+            for btn in self.nav_btns.values():
+                btn.setChecked(False)
+            self.workspace_view.load_cv(cv)
+            self.router.setCurrentWidget(self.workspace_view)
+
+    def quick_export_pdf(self, cv_id: str):
+        cv = self.cv_repo.get_by_id(cv_id)
+        if not cv: return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export PDF", f"{cv.name.replace(' ', '_')}.pdf", "PDF Documents (*.pdf)"
+        )
+        if file_path:
+            PDFService.export_pdf_file(cv, file_path)
+            self.cv_repo.record_export(cv.id, cv.name, file_path)
+            self.toast.show_message(f"Exported to {Path(file_path).name}")
+            self.dashboard_view.refresh()
+
+    def duplicate_cv(self, cv_id: str):
+        new_cv = self.cv_repo.duplicate(cv_id, as_version=False)
+        if new_cv:
+            self.toast.show_message(f"Duplicated: {new_cv.name}")
+            if self.router.currentWidget() == self.my_cvs_view:
+                self.my_cvs_view.refresh()
+            else:
+                self.dashboard_view.refresh()
+
+    def create_cv_version(self, cv_id: str):
+        orig = self.cv_repo.get_by_id(cv_id)
+        if not orig: return
+        label, ok = QInputDialog.getText(
+            self, "Create Job-Specific Version",
+            "Enter target version label (e.g. 'Backend Engineer', 'Internship'):",
+            text="Specialized Version"
+        )
+        if ok and label.strip():
+            new_cv = self.cv_repo.duplicate(cv_id, as_version=True, version_label=label.strip())
+            if new_cv:
+                self.toast.show_message(f"Created version '{label.strip()}'")
+                self.open_editor(new_cv.id)
+
+    def delete_cv(self, cv_id: str):
+        reply = QMessageBox.question(
+            self, "Confirm Delete",
+            "Are you sure you want to permanently delete this CV?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self.cv_repo.delete(cv_id)
+            self.dashboard_view.refresh()
+            self.toast.show_message("CV deleted")
+
+    def import_cv(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import CVCraft Document", "", "CVCraft Files (*.cvcv);;JSON Files (*.json)"
+        )
+        if file_path:
+            try:
+                cv = ImportExportService.import_cvcv_file(file_path)
+                if cv:
+                    score, _ = CVService.calculate_completion(cv)
+                    self.cv_repo.save(cv, completion_pct=score)
+                    self.toast.show_message(f"Imported: {cv.name}")
+                    self.open_editor(cv.id)
+            except Exception as e:
+                QMessageBox.critical(self, "Import Failed", f"Could not import file: {str(e)}")
+
+    def open_tailor_for_cv(self, cv_id: str):
+        self._set_active_nav("job_match")
+        self.job_match_view.refresh(preselect_cv_id=cv_id)
+        self.router.setCurrentWidget(self.job_match_view)
+
+    def _on_template_selected(self, template_id: str):
+        # If workspace currently has an active CV, apply it directly; otherwise create new with template
+        if self.workspace_view.cv:
+            self.workspace_view.cv.template_id = template_id
+            self.workspace_view._schedule_save()
+            self.workspace_view.preview_widget.update_preview(self.workspace_view.cv)
+            self.router.setCurrentWidget(self.workspace_view)
+            self.toast.show_message(f"Applied template: {template_id.title()}")
+        else:
+            cv = CVDocument(name=f"New {template_id.title()} CV", template_id=template_id)
+            self.cv_repo.save(cv)
+            self.open_editor(cv.id)
+
+    def _on_cv_updated(self, cv_id: str):
+        if self.workspace_view.cv and self.workspace_view.cv.id == cv_id:
+            cv = self.cv_repo.get_by_id(cv_id)
+            if cv: self.workspace_view.load_cv(cv)
+
+    def _save_active_cv(self):
+        if self.router.currentWidget() == self.workspace_view:
+            self.workspace_view._auto_save()
+            self.toast.show_message("Saved (Ctrl+S)")
+
+    def _export_active_cv(self):
+        if self.router.currentWidget() == self.workspace_view:
+            self.workspace_view.export_pdf()
+
+    def _toggle_theme(self):
+        current = self.settings_repo.get("theme", "dark")
+        new_theme = "light" if current == "dark" else "dark"
+        self.settings_repo.set("theme", new_theme)
+        self._apply_theme(new_theme)
+
+    def _apply_theme(self, theme_name: str):
+        self.setStyleSheet(get_stylesheet(theme_name))
+        self.toast.show_message(f"Switched to {theme_name.title()} mode")
