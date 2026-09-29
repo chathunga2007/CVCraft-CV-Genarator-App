@@ -107,10 +107,11 @@ class MyCVsView(QWidget):
             lbl2.setProperty("class", "HeaderSubtitle")
             el.addWidget(lbl1, alignment=Qt.AlignmentFlag.AlignCenter)
             el.addWidget(lbl2, alignment=Qt.AlignmentFlag.AlignCenter)
-            self.grid.addWidget(empty_frame, 0, 0, 1, 3)
+            self.grid.addWidget(empty_frame, 0, 0, 1, self._calc_cols())
             return
 
-        cols = 3
+        cols = self._calc_cols()
+        self._current_cols = cols
         for idx, c in enumerate(cvs):
             card = CVCard(c)
             card.edit_requested.connect(self.edit_cv_requested.emit)
@@ -121,6 +122,35 @@ class MyCVsView(QWidget):
             r = idx // cols
             col = idx % cols
             self.grid.addWidget(card, r, col)
+
+    def _calc_cols(self) -> int:
+        w = self.width()
+        if w >= 1100:
+            return 3
+        elif w >= 700:
+            return 2
+        else:
+            return 1
+
+    def _relayout_grid(self):
+        cards = []
+        while self.grid.count():
+            item = self.grid.takeAt(0)
+            w = item.widget()
+            if w:
+                cards.append(w)
+        cols = self._calc_cols()
+        for idx, card in enumerate(cards):
+            r = idx // cols
+            c = idx % cols
+            self.grid.addWidget(card, r, c)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_cols = self._calc_cols()
+        if getattr(self, "_current_cols", 3) != new_cols:
+            self._current_cols = new_cols
+            self._relayout_grid()
 
     def _confirm_delete(self, cv_id: str):
         reply = QMessageBox.question(
@@ -133,3 +163,4 @@ class MyCVsView(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             self.repo.delete(cv_id)
             self.refresh()
+
