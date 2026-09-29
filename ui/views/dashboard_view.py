@@ -190,13 +190,15 @@ class DashboardView(QWidget):
             el.addWidget(lbl1, alignment=Qt.AlignmentFlag.AlignCenter)
             el.addWidget(lbl2, alignment=Qt.AlignmentFlag.AlignCenter)
             el.addLayout(btn_box)
-            self.cv_grid.addWidget(empty_card, 0, 0, 1, 3)
+            cols = self._calc_cols()
+            self.cv_grid.addWidget(empty_card, 0, 0, 1, cols)
             self.cb_pct_lbl.setText("0%")
         else:
             avg_comp = int(sum(c.get("completion_pct", 0) for c in cvs) / len(cvs))
             self.cb_pct_lbl.setText(f"{avg_comp}%")
 
-            cols = 3
+            cols = self._calc_cols()
+            self._current_cols = cols
             for idx, c in enumerate(cvs):
                 card = CVCard(c)
                 card.edit_requested.connect(self.edit_cv_requested.emit)
@@ -207,3 +209,33 @@ class DashboardView(QWidget):
                 r = idx // cols
                 col = idx % cols
                 self.cv_grid.addWidget(card, r, col)
+
+    def _calc_cols(self) -> int:
+        w = self.width()
+        if w >= 1100:
+            return 3
+        elif w >= 700:
+            return 2
+        else:
+            return 1
+
+    def _relayout_grid(self):
+        cards = []
+        while self.cv_grid.count():
+            item = self.cv_grid.takeAt(0)
+            w = item.widget()
+            if w:
+                cards.append(w)
+        cols = self._calc_cols()
+        for idx, card in enumerate(cards):
+            r = idx // cols
+            c = idx % cols
+            self.cv_grid.addWidget(card, r, c)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_cols = self._calc_cols()
+        if getattr(self, "_current_cols", 3) != new_cols:
+            self._current_cols = new_cols
+            self._relayout_grid()
+
