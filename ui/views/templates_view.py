@@ -1,6 +1,7 @@
 """
 CVCraft Templates Showcase View
-Displays the 8 professional templates with previews, badges, and layout descriptions.
+Displays the 8 professional templates with previews, badges, best-fit guidance,
+and direct application buttons.
 """
 
 from PyQt6.QtWidgets import (
@@ -9,8 +10,20 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from config import TEMPLATES
 
+TEMPLATE_EXTRAS = {
+    "modern": {"best_for": "Software Engineers, Product Managers, Tech Specialists", "type": "Two-Column Split", "ats": "High"},
+    "minimal": {"best_for": "Consultants, Designers, Architects, General Business", "type": "Clean Single-Column", "ats": "98%"},
+    "executive": {"best_for": "Directors, VPs, Senior Executives, Dept Leads", "type": "Header Banner + Split", "ats": "Very High"},
+    "professional": {"best_for": "Finance, Corporate, Operations, Legal, Banking", "type": "Structured Corporate 2-Col", "ats": "High"},
+    "creative": {"best_for": "UI/UX Designers, Creative Directors, Media Specialists", "type": "Vibrant Color Accents", "ats": "Portfolio Focus"},
+    "developer": {"best_for": "Full Stack, DevOps, Cloud Architects, Backend Engineers", "type": "Terminal Style + GitHub", "ats": "High"},
+    "academic": {"best_for": "Researchers, Professors, Postdocs, Scientists", "type": "Formal Traditional Serif", "ats": "Universal"},
+    "ats_friendly": {"best_for": "Large Enterprise Applications & Automated Job Portals", "type": "Zero Tables Linear OCR", "ats": "99.9% Best"}
+}
+
 class TemplatesView(QWidget):
     template_selected = pyqtSignal(str) # passes template_id
+    create_with_template_requested = pyqtSignal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -22,10 +35,10 @@ class TemplatesView(QWidget):
 
         # Header
         hdr_box = QVBoxLayout()
-        title = QLabel("Professional CV Templates")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #FFFFFF;")
-        sub = QLabel("8 distinct architectural layouts engineered for recruiters, hiring managers, and ATS parsers.")
-        sub.setStyleSheet("font-size: 13px; color: #94A3B8;")
+        title = QLabel("Architectural CV Templates")
+        title.setProperty("class", "HeaderTitle")
+        sub = QLabel("8 recruiter-tested layouts engineered for specific career milestones, visual impact, and automated ATS parsing.")
+        sub.setProperty("class", "HeaderSubtitle")
         hdr_box.addWidget(title)
         hdr_box.addWidget(sub)
         layout.addLayout(hdr_box)
@@ -52,56 +65,72 @@ class TemplatesView(QWidget):
 
     def _create_template_card(self, tpl: dict) -> QFrame:
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1E293B;
-                border: 1px solid #334155;
-                border-radius: 12px;
-                padding: 16px;
-            }
-            QFrame:hover {
-                border-color: #6366F1;
-                background-color: #232F42;
-            }
-        """)
+        card.setProperty("class", "Card")
         cl = QVBoxLayout(card)
-        cl.setSpacing(12)
+        cl.setContentsMargins(18, 16, 18, 16)
+        cl.setSpacing(10)
+
+        extras = TEMPLATE_EXTRAS.get(tpl["id"], {"best_for": "All Professionals", "type": "Modern", "ats": "Standard"})
 
         # Banner graphic / color block
         banner = QFrame()
-        banner.setFixedHeight(70)
+        banner.setFixedHeight(72)
         banner.setStyleSheet(f"""
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {tpl['preview_bg']}, stop:1 #0F172A);
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {tpl['preview_bg']}, stop:1 #1E1B4B);
             border-radius: 8px;
         """)
         b_layout = QHBoxLayout(banner)
+        b_layout.setContentsMargins(12, 10, 12, 10)
+        
+        type_lbl = QLabel(extras["type"])
+        type_lbl.setStyleSheet("color: rgba(255,255,255,0.85); font-size: 11px; font-weight: 600;")
+        
         badge = QLabel(tpl["badge"])
-        badge.setStyleSheet("background-color: rgba(255,255,255,0.2); color: #FFFFFF; font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px;")
+        badge.setStyleSheet("background-color: rgba(255,255,255,0.25); color: #FFFFFF; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 4px;")
+        
+        b_layout.addWidget(type_lbl, alignment=Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignLeft)
+        b_layout.addStretch()
         b_layout.addWidget(badge, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
         cl.addWidget(banner)
 
         # Title
         t_lbl = QLabel(tpl["name"])
-        t_lbl.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+        t_lbl.setProperty("class", "CardTitle")
         cl.addWidget(t_lbl)
 
         # Description
         d_lbl = QLabel(tpl["description"])
         d_lbl.setWordWrap(True)
-        d_lbl.setStyleSheet("font-size: 12px; color: #94A3B8; min-height: 48px;")
+        d_lbl.setProperty("class", "MutedText")
+        d_lbl.setStyleSheet("min-height: 44px;")
         cl.addWidget(d_lbl)
 
-        # Apply Button
-        btn = QPushButton(f"Use {tpl['name']}")
-        btn.setStyleSheet("""
-            background-color: #4F46E5;
-            color: #FFFFFF;
-            font-weight: 600;
-            padding: 8px;
-            border-radius: 6px;
-            border: none;
-        """)
-        btn.clicked.connect(lambda _, tid=tpl["id"]: self.template_selected.emit(tid))
-        cl.addWidget(btn)
+        # Best For Box
+        best_box = QHBoxLayout()
+        best_box.setSpacing(4)
+        bf_lbl = QLabel(f"<b>Best for:</b> {extras['best_for']}")
+        bf_lbl.setWordWrap(True)
+        bf_lbl.setStyleSheet("font-size: 11px; color: #818CF8;")
+        best_box.addWidget(bf_lbl)
+        cl.addLayout(best_box)
+
+        cl.addSpacing(4)
+
+        # Action Buttons
+        btn_box = QHBoxLayout()
+        btn_box.setSpacing(8)
+
+        use_btn = QPushButton("Apply to Active CV")
+        use_btn.setProperty("class", "PrimaryBtn")
+        use_btn.clicked.connect(lambda _, tid=tpl["id"]: self.template_selected.emit(tid))
+        btn_box.addWidget(use_btn)
+
+        new_btn = QPushButton("+ New")
+        new_btn.setProperty("class", "SecondaryBtn")
+        new_btn.setToolTip("Create new CV with this template")
+        new_btn.clicked.connect(lambda _, tid=tpl["id"]: self.create_with_template_requested.emit(tid))
+        btn_box.addWidget(new_btn)
+
+        cl.addLayout(btn_box)
 
         return card
