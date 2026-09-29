@@ -1,6 +1,6 @@
 """
 CVCraft Stat Card Component
-Modern rounded statistics card displaying icon, value, label, and accent badges.
+Modern statistics card inheriting from the active theme (Dark & Light).
 """
 
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QWidget
@@ -10,26 +10,15 @@ class StatCard(QFrame):
     def __init__(self, title: str, value: str, icon_symbol: str, accent_color: str = "#4F46E5", subtitle: str = "", parent=None):
         super().__init__(parent)
         self.setProperty("class", "StatCard")
-        self.setStyleSheet(f"""
-            QFrame.StatCard {{
-                background-color: #162032;
-                border: 1px solid #27354A;
-                border-radius: 12px;
-                padding: 14px;
-            }}
-            QFrame.StatCard:hover {{
-                border-color: {accent_color};
-            }}
-        """)
         
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setContentsMargins(16, 14, 16, 14)
         layout.setSpacing(6)
 
         # Top row: Title + Icon Badge
         top_row = QHBoxLayout()
         title_lbl = QLabel(title.upper())
-        title_lbl.setStyleSheet("font-size: 11px; font-weight: 600; color: #94A3B8; letter-spacing: 0.5px;")
+        title_lbl.setProperty("class", "StatLabel")
         
         icon_badge = QLabel(icon_symbol)
         icon_badge.setStyleSheet(f"""
@@ -47,13 +36,13 @@ class StatCard(QFrame):
 
         # Value
         self.val_lbl = QLabel(value)
-        self.val_lbl.setStyleSheet("font-size: 26px; font-weight: 800; color: #F8FAFC;")
+        self.val_lbl.setProperty("class", "StatValue")
         layout.addWidget(self.val_lbl)
 
         # Subtitle
         if subtitle:
             sub_lbl = QLabel(subtitle)
-            sub_lbl.setStyleSheet("font-size: 11px; color: #64748B;")
+            sub_lbl.setProperty("class", "MutedText")
             layout.addWidget(sub_lbl)
 
     def set_value(self, value: str):
