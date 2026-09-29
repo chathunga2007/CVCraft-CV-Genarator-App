@@ -33,9 +33,9 @@ class MyCVsView(QWidget):
         header = QHBoxLayout()
         title_box = QVBoxLayout()
         title = QLabel("My CVs & Resumes")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #FFFFFF;")
+        title.setProperty("class", "HeaderTitle")
         sub = QLabel("Manage your career documents, job-specific versions, and exports.")
-        sub.setStyleSheet("font-size: 13px; color: #94A3B8;")
+        sub.setProperty("class", "HeaderSubtitle")
         title_box.addWidget(title)
         title_box.addWidget(sub)
         header.addLayout(title_box)
@@ -43,14 +43,7 @@ class MyCVsView(QWidget):
 
         create_btn = QPushButton("+ New CV")
         create_btn.setFixedHeight(38)
-        create_btn.setStyleSheet("""
-            background-color: #4F46E5;
-            color: #FFFFFF;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 8px;
-            padding: 0 16px;
-        """)
+        create_btn.setProperty("class", "PrimaryBtn")
         create_btn.clicked.connect(self.create_cv_requested.emit)
         header.addWidget(create_btn)
         layout.addLayout(header)
@@ -102,15 +95,16 @@ class MyCVsView(QWidget):
 
         if not cvs:
             empty_frame = QFrame()
-            empty_frame.setStyleSheet("background-color: #1E293B; border-radius: 12px; border: 1px dashed #334155; padding: 48px;")
+            empty_frame.setProperty("class", "Card")
             el = QVBoxLayout(empty_frame)
+            el.setContentsMargins(48, 48, 48, 48)
             el.setAlignment(Qt.AlignmentFlag.AlignCenter)
             el.setSpacing(12)
             
             lbl1 = QLabel("No CVs found" if search_query else "No CVs yet")
-            lbl1.setStyleSheet("font-size: 16px; font-weight: 700; color: #FFFFFF;")
+            lbl1.setProperty("class", "SectionHeader")
             lbl2 = QLabel("Try a different search term or click '+ New CV' to create one.")
-            lbl2.setStyleSheet("font-size: 13px; color: #94A3B8;")
+            lbl2.setProperty("class", "HeaderSubtitle")
             el.addWidget(lbl1, alignment=Qt.AlignmentFlag.AlignCenter)
             el.addWidget(lbl2, alignment=Qt.AlignmentFlag.AlignCenter)
             self.grid.addWidget(empty_frame, 0, 0, 1, 3)
