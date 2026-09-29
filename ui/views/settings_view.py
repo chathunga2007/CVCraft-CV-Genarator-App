@@ -27,9 +27,9 @@ class SettingsView(QWidget):
         # Header
         hdr_box = QVBoxLayout()
         title = QLabel("Settings & Preferences")
-        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #FFFFFF;")
+        title.setProperty("class", "HeaderTitle")
         sub = QLabel("Configure appearance, document defaults, storage, AI integration, and privacy.")
-        sub.setStyleSheet("font-size: 13px; color: #94A3B8;")
+        sub.setProperty("class", "HeaderSubtitle")
         hdr_box.addWidget(title)
         hdr_box.addWidget(sub)
         layout.addLayout(hdr_box)
@@ -51,10 +51,10 @@ class SettingsView(QWidget):
         
         t_row = QHBoxLayout()
         t_lbl = QLabel("Application Theme:")
-        t_lbl.setStyleSheet("font-size: 13px; color: #E2E8F0;")
+        t_lbl.setProperty("class", "FieldLabel")
         self.theme_combo = QComboBox()
-        self.theme_combo.addItem("Dark Mode (Recommended)", "dark")
-        self.theme_combo.addItem("Light Mode", "light")
+        self.theme_combo.addItem("Dark Mode (Deep Indigo)", "dark")
+        self.theme_combo.addItem("Light Mode (Clean Slate)", "light")
         current_theme = self.settings.get("theme", "dark")
         self.theme_combo.setCurrentIndex(0 if current_theme == "dark" else 1)
         self.theme_combo.currentIndexChanged.connect(self._on_theme_changed)
@@ -119,11 +119,11 @@ class SettingsView(QWidget):
 
         btn_row = QHBoxLayout()
         backup_btn = QPushButton("💾 Create Full System Backup (.zip)")
-        backup_btn.setStyleSheet("background-color: #312E81; color: #C7D2FE; padding: 8px 14px; border-radius: 6px; font-weight: 600;")
+        backup_btn.setProperty("class", "PrimaryBtn")
         backup_btn.clicked.connect(self._create_backup)
         
         restore_btn = QPushButton("📂 Restore From Backup (.zip)")
-        restore_btn.setStyleSheet("background-color: #1E293B; color: #E2E8F0; border: 1px solid #334155; padding: 8px 14px; border-radius: 6px;")
+        restore_btn.setProperty("class", "SecondaryBtn")
         restore_btn.clicked.connect(self._restore_backup)
 
         btn_row.addWidget(backup_btn)
@@ -140,7 +140,7 @@ class SettingsView(QWidget):
 
         ai_desc = QLabel("CVCraft includes a powerful offline-first rule-based NLP assistant by default. You can optionally connect Google Gemini or Groq API for cloud AI.")
         ai_desc.setWordWrap(True)
-        ai_desc.setStyleSheet("font-size: 12px; color: #94A3B8;")
+        ai_desc.setProperty("class", "MutedText")
         ai_layout.addWidget(ai_desc)
 
         ai_p_row = QHBoxLayout()
@@ -175,7 +175,7 @@ class SettingsView(QWidget):
             "No telemetry, tracking, or document data is uploaded to any remote server without your explicit configuration."
         )
         priv_p.setWordWrap(True)
-        priv_p.setStyleSheet("font-size: 12px; color: #CBD5E1; line-height: 1.5;")
+        priv_p.setProperty("class", "MutedText")
         priv_layout.addWidget(priv_p)
         c_layout.addWidget(priv_card)
 
@@ -185,12 +185,13 @@ class SettingsView(QWidget):
 
     def _create_section_header(self, title: str) -> QLabel:
         lbl = QLabel(title)
-        lbl.setStyleSheet("font-size: 15px; font-weight: 700; color: #FFFFFF;")
+        lbl.setProperty("class", "SectionHeader")
         return lbl
 
     def _create_card(self) -> QFrame:
         card = QFrame()
-        card.setStyleSheet("background-color: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px;")
+        card.setProperty("class", "Card")
+        card.setContentsMargins(16, 16, 16, 16)
         return card
 
     def _on_theme_changed(self):
