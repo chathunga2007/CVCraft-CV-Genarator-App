@@ -39,8 +39,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"{APP_NAME} — Build. Craft. Get Noticed.")
-        self.resize(1280, 820)
-        self.setMinimumSize(1024, 700)
+        self.resize(1180, 740)
+        self.setMinimumSize(960, 560)
 
         # Set Window Icon
         ico_path = ASSETS_DIR / "cvcraft.ico"
@@ -82,30 +82,43 @@ class MainWindow(QMainWindow):
     def _setup_sidebar(self):
         self.sidebar = QWidget()
         self.sidebar.setObjectName("Sidebar")
-        self.sidebar.setFixedWidth(230)
+        self.sidebar.setFixedWidth(200)
         s_layout = QVBoxLayout(self.sidebar)
-        s_layout.setContentsMargins(14, 18, 14, 18)
+        s_layout.setContentsMargins(10, 16, 10, 16)
         s_layout.setSpacing(6)
 
-        # Logo Header
+        # Header Row: Logo + Sidebar Toggle
+        logo_row = QHBoxLayout()
+        logo_row.setContentsMargins(0, 0, 0, 0)
+        logo_row.setSpacing(4)
         self.logo_w = LogoWidget(compact=False)
-        s_layout.addWidget(self.logo_w)
-        s_layout.addSpacing(16)
+        logo_row.addWidget(self.logo_w)
+        logo_row.addStretch()
 
-        # Nav Buttons
+        self.sidebar_toggle_btn = QPushButton("☰")
+        self.sidebar_toggle_btn.setFixedSize(28, 28)
+        self.sidebar_toggle_btn.setProperty("class", "GhostBtn")
+        self.sidebar_toggle_btn.setToolTip("Toggle Sidebar (Ctrl+B)")
+        self.sidebar_toggle_btn.clicked.connect(self._toggle_sidebar)
+        logo_row.addWidget(self.sidebar_toggle_btn)
+
+        s_layout.addLayout(logo_row)
+        s_layout.addSpacing(10)
+
+        # Nav Buttons Definition
+        self.nav_definitions = {
+            "dashboard": ("📊", "Dashboard"),
+            "my_cvs": ("📁", "My CVs"),
+            "create_cv": ("➕", "Create CV"),
+            "templates": ("🎨", "Templates"),
+            "job_match": ("🎯", "Job Match / ATS"),
+            "settings": ("⚙️", "Settings"),
+            "about": ("ℹ️", "About CVCraft")
+        }
+
         self.nav_btns = {}
-        nav_items = [
-            ("dashboard", "📊  Dashboard"),
-            ("my_cvs", "📁  My CVs"),
-            ("create_cv", "➕  Create CV"),
-            ("templates", "🎨  Templates"),
-            ("job_match", "🎯  Job Match / ATS"),
-            ("settings", "⚙️  Settings"),
-            ("about", "ℹ️  About CVCraft")
-        ]
-
-        for key, text in nav_items:
-            btn = QPushButton(text)
+        for key, (icon, label) in self.nav_definitions.items():
+            btn = QPushButton(f"{icon}  {label}")
             btn.setProperty("class", "NavBtn")
             btn.setCheckable(True)
             btn.clicked.connect(lambda _, k=key: self._on_nav_clicked(k))
@@ -125,13 +138,13 @@ class MainWindow(QMainWindow):
         self.theme_toggle_btn.clicked.connect(self._toggle_theme)
         bottom_box.addWidget(self.theme_toggle_btn)
 
-        profile_lbl = QLabel("● Local Profile • Offline")
-        profile_lbl.setStyleSheet("font-size: 11px; color: #10B981; font-weight: 500;")
-        bottom_box.addWidget(profile_lbl)
+        self.profile_lbl = QLabel("● Local Profile • Offline")
+        self.profile_lbl.setStyleSheet("font-size: 11px; color: #10B981; font-weight: 500;")
+        bottom_box.addWidget(self.profile_lbl)
 
-        ver_lbl = QLabel(f"{APP_NAME} v{APP_VERSION}")
-        ver_lbl.setStyleSheet("font-size: 10px; color: #64748B;")
-        bottom_box.addWidget(ver_lbl)
+        self.ver_lbl = QLabel(f"{APP_NAME} v{APP_VERSION}")
+        self.ver_lbl.setStyleSheet("font-size: 10px; color: #64748B;")
+        bottom_box.addWidget(self.ver_lbl)
 
         s_layout.addLayout(bottom_box)
         self.root_layout.addWidget(self.sidebar)
@@ -198,8 +211,38 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("Ctrl+N"), self, self.create_new_cv)
         QShortcut(QKeySequence("Ctrl+S"), self, self._save_active_cv)
         QShortcut(QKeySequence("Ctrl+E"), self, self._export_active_cv)
+        QShortcut(QKeySequence("Ctrl+B"), self, self._toggle_sidebar)
         QShortcut(QKeySequence("Ctrl+Z"), self, self.workspace_view.undo)
         QShortcut(QKeySequence("Ctrl+Y"), self, self.workspace_view.redo)
+
+    def _toggle_sidebar(self):
+        self._sidebar_collapsed = not getattr(self, "_sidebar_collapsed", False)
+        if self._sidebar_collapsed:
+            self.sidebar.setFixedWidth(56)
+            self.logo_w.hide()
+            self.profile_lbl.hide()
+            self.ver_lbl.hide()
+            current_theme = self.settings_repo.get("theme", "dark")
+            self.theme_toggle_btn.setText("☀️" if current_theme == "dark" else "🌙")
+            self.theme_toggle_btn.setToolTip("Toggle Theme")
+            for key, (icon, label) in self.nav_definitions.items():
+                btn = self.nav_btns[key]
+                btn.setText(icon)
+                btn.setToolTip(label)
+                btn.setStyleSheet("padding: 9px 0px; text-align: center; font-size: 15px;")
+        else:
+            self.sidebar.setFixedWidth(200)
+            self.logo_w.show()
+            self.profile_lbl.show()
+            self.ver_lbl.show()
+            current_theme = self.settings_repo.get("theme", "dark")
+            self.theme_toggle_btn.setText("☀️  Switch to Light" if current_theme == "dark" else "🌙  Switch to Dark")
+            self.theme_toggle_btn.setToolTip("")
+            for key, (icon, label) in self.nav_definitions.items():
+                btn = self.nav_btns[key]
+                btn.setText(f"{icon}  {label}")
+                btn.setToolTip("")
+                btn.setStyleSheet("")
 
     def _set_active_nav(self, active_key: str):
         for k, btn in self.nav_btns.items():
@@ -448,10 +491,13 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(stylesheet)
 
         # Update sidebar button text
-        if theme_name == "dark":
-            self.theme_toggle_btn.setText("☀️  Switch to Light")
+        if getattr(self, "_sidebar_collapsed", False):
+            self.theme_toggle_btn.setText("☀️" if theme_name == "dark" else "🌙")
         else:
-            self.theme_toggle_btn.setText("🌙  Switch to Dark")
+            if theme_name == "dark":
+                self.theme_toggle_btn.setText("☀️  Switch to Light")
+            else:
+                self.theme_toggle_btn.setText("🌙  Switch to Dark")
 
         # Sync SettingsView theme combobox if open
         if hasattr(self, 'settings_view') and hasattr(self.settings_view, 'theme_combo'):
