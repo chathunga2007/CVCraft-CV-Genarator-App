@@ -122,6 +122,12 @@ QPushButton.GhostBtn:hover {
     color: #F8FAFC;
 }
 
+QPushButton.GhostBtn:checked {
+    background-color: #4F46E5;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
 QPushButton.DangerBtn {
     background-color: #BE123C;
     color: #FFFFFF;
@@ -176,6 +182,15 @@ QFrame.TopBar {
 QFrame.PreviewArea {
     background-color: #0B0F19;
     border-left: 1px solid #1E293B;
+}
+
+/* Splitters */
+QSplitter::handle:horizontal {
+    background-color: #1E293B;
+    width: 4px;
+}
+QSplitter::handle:horizontal:hover {
+    background-color: #6366F1;
 }
 
 /* Input Fields */
@@ -505,6 +520,12 @@ QPushButton.GhostBtn:hover {
     color: #0F172A;
 }
 
+QPushButton.GhostBtn:checked {
+    background-color: #4F46E5;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
 QPushButton.DangerBtn {
     background-color: #E11D48;
     color: #FFFFFF;
@@ -559,6 +580,15 @@ QFrame.TopBar {
 QFrame.PreviewArea {
     background-color: #F1F5F9;
     border-left: 1px solid #CBD5E1;
+}
+
+/* Splitters */
+QSplitter::handle:horizontal {
+    background-color: #CBD5E1;
+    width: 4px;
+}
+QSplitter::handle:horizontal:hover {
+    background-color: #4F46E5;
 }
 
 /* Input Fields */
