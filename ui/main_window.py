@@ -50,8 +50,12 @@ class MainWindow(QMainWindow):
         self.cv_repo = CVRepository()
         self.settings_repo = SettingsRepository()
 
-        # Apply Saved Theme
+        # Apply Saved Theme Globally
         current_theme = self.settings_repo.get("theme", "dark")
+        from PyQt6.QtWidgets import QApplication
+        app = QApplication.instance()
+        if app:
+            app.setStyleSheet(get_stylesheet(current_theme))
         self.setStyleSheet(get_stylesheet(current_theme))
 
         # Root Layout
@@ -114,8 +118,10 @@ class MainWindow(QMainWindow):
         bottom_box = QVBoxLayout()
         bottom_box.setSpacing(6)
 
-        self.theme_toggle_btn = QPushButton("🌓 Toggle Theme")
-        self.theme_toggle_btn.setStyleSheet("background-color: #1E293B; color: #E2E8F0; border: 1px solid #334155; border-radius: 6px; padding: 6px 12px; font-size: 11px;")
+        current_theme = self.settings_repo.get("theme", "dark")
+        toggle_label = "☀️  Switch to Light" if current_theme == "dark" else "🌙  Switch to Dark"
+        self.theme_toggle_btn = QPushButton(toggle_label)
+        self.theme_toggle_btn.setProperty("class", "SecondaryBtn")
         self.theme_toggle_btn.clicked.connect(self._toggle_theme)
         bottom_box.addWidget(self.theme_toggle_btn)
 
@@ -164,6 +170,7 @@ class MainWindow(QMainWindow):
 
         self.templates_view = TemplatesView()
         self.templates_view.template_selected.connect(self._on_template_selected)
+        self.templates_view.create_with_template_requested.connect(self.create_new_cv_with_template)
 
         self.job_match_view = JobMatchView(self.cv_repo)
         self.job_match_view.cv_updated.connect(self._on_cv_updated)
@@ -172,6 +179,7 @@ class MainWindow(QMainWindow):
         self.settings_view.theme_changed.connect(self._apply_theme)
 
         self.about_view = AboutView()
+        self.about_view.load_demo_requested.connect(self.load_demo_cv)
 
         # Add to stack
         self.router.addWidget(self.onboarding_view)
@@ -352,9 +360,64 @@ class MainWindow(QMainWindow):
             self.router.setCurrentWidget(self.workspace_view)
             self.toast.show_message(f"Applied template: {template_id.title()}")
         else:
-            cv = CVDocument(name=f"New {template_id.title()} CV", template_id=template_id)
-            self.cv_repo.save(cv)
-            self.open_editor(cv.id)
+            self.create_new_cv_with_template(template_id)
+
+    def create_new_cv_with_template(self, template_id: str):
+        from models.cv_model import ExperienceItem, EducationItem, SkillItem
+        tpl_name = template_id.replace("_", " ").title()
+        cv = CVDocument(name=f"My {tpl_name} CV", job_target="Target Role", template_id=template_id)
+        cv.personal.full_name = "Alex Mitchell"
+        cv.personal.professional_title = "Senior Professional"
+        cv.personal.email = "alex.mitchell@example.com"
+        cv.personal.phone = "+1 (555) 234-5678"
+        cv.personal.location = "San Francisco, CA"
+        cv.personal.linkedin = "linkedin.com/in/alexmitchell"
+        cv.personal.github = "github.com/alexmitchell"
+        cv.summary = "Accomplished professional with a proven track record of engineering scalable solutions, optimizing operations, and delivering measurable impact across high-growth initiatives."
+        cv.experience = [
+            ExperienceItem(
+                company="Apex Innovations Inc.",
+                job_title="Lead Engineer / Project Lead",
+                location="San Francisco, CA",
+                start_date="2021",
+                end_date="Present",
+                is_current=True,
+                responsibilities="• Spearheaded core product architecture reducing latency by 42% and serving 2M+ daily requests.\n• Led a cross-functional agile team of 8 engineers delivering major quarterly milestones on schedule.\n• Designed and maintained automated CI/CD deployment pipelines with 99.98% uptime.",
+                achievements="Awarded Excellence in Technical Leadership (2023)"
+            ),
+            ExperienceItem(
+                company="Vertex Technologies",
+                job_title="Software Engineer",
+                location="San Jose, CA",
+                start_date="2018",
+                end_date="2021",
+                is_current=False,
+                responsibilities="• Built scalable REST APIs and microservices handling 50k+ transactions per minute.\n• Optimized database queries and caching layers resulting in a 35% reduction in compute costs.\n• Mentored 3 junior developers through onboarding and code review standards."
+            )
+        ]
+        cv.education = [
+            EducationItem(
+                institution="University of California, Berkeley",
+                degree="B.S. in Computer Science",
+                field_of_study="Computer Science & Engineering",
+                start_date="2014",
+                end_date="2018",
+                grade="Magna Cum Laude (3.88 GPA)"
+            )
+        ]
+        cv.skills = [
+            SkillItem(name="Python & TypeScript", category="Technical Skills", proficiency="Expert"),
+            SkillItem(name="Cloud Architecture (AWS / GCP)", category="Technical Skills", proficiency="Advanced"),
+            SkillItem(name="System Design & Scalability", category="Technical Skills", proficiency="Expert"),
+            SkillItem(name="Agile Project Leadership", category="Soft Skills", proficiency="Expert"),
+            SkillItem(name="Strategic Planning", category="Soft Skills", proficiency="Advanced")
+        ]
+        default_pal = self.settings_repo.get("default_palette", "Deep Indigo")
+        cv.customization.accent_palette = default_pal
+        self.cv_repo.save(cv, completion_pct=85)
+        self.settings_repo.set("onboarding_completed", "true")
+        self.open_editor(cv.id)
+        self.toast.show_message(f"Created new CV with '{tpl_name}' template")
 
     def _on_cv_updated(self, cv_id: str):
         if self.workspace_view.cv and self.workspace_view.cv.id == cv_id:
@@ -377,5 +440,25 @@ class MainWindow(QMainWindow):
         self._apply_theme(new_theme)
 
     def _apply_theme(self, theme_name: str):
-        self.setStyleSheet(get_stylesheet(theme_name))
+        from PyQt6.QtWidgets import QApplication
+        app = QApplication.instance()
+        stylesheet = get_stylesheet(theme_name)
+        if app:
+            app.setStyleSheet(stylesheet)
+        self.setStyleSheet(stylesheet)
+
+        # Update sidebar button text
+        if theme_name == "dark":
+            self.theme_toggle_btn.setText("☀️  Switch to Light")
+        else:
+            self.theme_toggle_btn.setText("🌙  Switch to Dark")
+
+        # Sync SettingsView theme combobox if open
+        if hasattr(self, 'settings_view') and hasattr(self.settings_view, 'theme_combo'):
+            idx = 0 if theme_name == "dark" else 1
+            if self.settings_view.theme_combo.currentIndex() != idx:
+                self.settings_view.theme_combo.blockSignals(True)
+                self.settings_view.theme_combo.setCurrentIndex(idx)
+                self.settings_view.theme_combo.blockSignals(False)
+
         self.toast.show_message(f"Switched to {theme_name.title()} mode")
