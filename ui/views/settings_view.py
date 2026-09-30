@@ -37,7 +37,6 @@ class SettingsView(QWidget):
         # Scroll Area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("background: transparent; border: none;")
 
         content = QWidget()
         c_layout = QVBoxLayout(content)
