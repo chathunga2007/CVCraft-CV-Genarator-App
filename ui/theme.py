@@ -6,7 +6,7 @@ All widgets inherit theme tokens cleanly without hardcoded overriding styles.
 
 DARK_THEME = """
 /* Base Window & Global */
-QMainWindow, QWidget#MainContent, QStackedWidget#MainContent {
+QMainWindow, QWidget#MainContent, QStackedWidget#MainContent, QWidget.MainContent, QWidget[class="MainContent"] {
     background-color: #0F172A;
     color: #F8FAFC;
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
@@ -23,8 +23,8 @@ QFrame#WorkspaceSidebar {
     border-right: 1px solid #1E293B;
 }
 
-QScrollArea {
-    background: transparent;
+QScrollArea, QScrollArea > QWidget, QScrollArea > QWidget > QWidget {
+    background-color: #0F172A;
     border: none;
 }
 
@@ -178,6 +178,12 @@ QFrame.TopBar {
     border-bottom: 1px solid #1E293B;
 }
 
+QFrame.CompletionBanner {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1E1B4B, stop:1 #1E293B);
+    border: 1px solid #4338CA;
+    border-radius: 12px;
+}
+
 /* Live Preview Area */
 QFrame.PreviewArea {
     background-color: #0B0F19;
@@ -302,6 +308,47 @@ QLabel.CardTitle {
     color: #FFFFFF;
 }
 
+QLabel.LogoTitle {
+    font-size: 18px;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: 0.5px;
+}
+
+QLabel.LogoTagline {
+    font-size: 10px;
+    font-weight: 600;
+    color: #818CF8;
+    letter-spacing: 0.2px;
+}
+
+QLabel.TemplateBadge {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #A5B4FC;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+QLabel.BannerTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+QLabel.BannerSubtitle {
+    font-size: 12px;
+    color: #C7D2FE;
+}
+
+QLabel.BannerPct {
+    font-size: 26px;
+    font-weight: 800;
+    color: #10B981;
+}
+
 /* Progress Bars */
 QProgressBar {
     background-color: #0F172A;
@@ -404,7 +451,7 @@ QToolTip {
 
 LIGHT_THEME = """
 /* Base Window & Global */
-QMainWindow, QWidget#MainContent, QStackedWidget#MainContent {
+QMainWindow, QWidget#MainContent, QStackedWidget#MainContent, QWidget.MainContent, QWidget[class="MainContent"] {
     background-color: #F8FAFC;
     color: #0F172A;
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
@@ -421,8 +468,8 @@ QFrame#WorkspaceSidebar {
     border-right: 1px solid #E2E8F0;
 }
 
-QScrollArea {
-    background: transparent;
+QScrollArea, QScrollArea > QWidget, QScrollArea > QWidget > QWidget {
+    background-color: #F8FAFC;
     border: none;
 }
 
@@ -576,6 +623,12 @@ QFrame.TopBar {
     border-bottom: 1px solid #E2E8F0;
 }
 
+QFrame.CompletionBanner {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #EEF2FF, stop:1 #F8FAFC);
+    border: 1.5px solid #C7D2FE;
+    border-radius: 12px;
+}
+
 /* Live Preview Area */
 QFrame.PreviewArea {
     background-color: #F1F5F9;
@@ -700,6 +753,47 @@ QLabel.CardTitle {
     font-size: 15px;
     font-weight: 700;
     color: #0F172A;
+}
+
+QLabel.LogoTitle {
+    font-size: 18px;
+    font-weight: 800;
+    color: #0F172A;
+    letter-spacing: 0.5px;
+}
+
+QLabel.LogoTagline {
+    font-size: 10px;
+    font-weight: 600;
+    color: #4F46E5;
+    letter-spacing: 0.2px;
+}
+
+QLabel.TemplateBadge {
+    background-color: #EEF2FF;
+    color: #4338CA;
+    border: 1px solid #C7D2FE;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+QLabel.BannerTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1E1B4B;
+}
+
+QLabel.BannerSubtitle {
+    font-size: 12px;
+    color: #4338CA;
+}
+
+QLabel.BannerPct {
+    font-size: 26px;
+    font-weight: 800;
+    color: #059669;
 }
 
 /* Progress Bars */
