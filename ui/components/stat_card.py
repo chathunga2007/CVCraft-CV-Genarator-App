@@ -22,8 +22,9 @@ class StatCard(QFrame):
         
         icon_badge = QLabel(icon_symbol)
         icon_badge.setStyleSheet(f"""
-            background-color: {accent_color}22;
+            background-color: {accent_color}1E;
             color: {accent_color};
+            border: 1px solid {accent_color}40;
             font-size: 14px;
             font-weight: bold;
             padding: 4px 8px;
