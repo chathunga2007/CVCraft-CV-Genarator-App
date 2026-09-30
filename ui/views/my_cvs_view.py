@@ -71,7 +71,6 @@ class MyCVsView(QWidget):
         # Scroll Area for CV Grid
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("background: transparent; border: none;")
 
         self.grid_container = QWidget()
         self.grid = QGridLayout(self.grid_container)
