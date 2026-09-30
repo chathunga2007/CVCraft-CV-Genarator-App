@@ -34,14 +34,7 @@ class CVCard(QFrame):
         
         tpl_name = cv_data.get("template_id", "modern").replace("_", " ").title()
         tpl_badge = QLabel(tpl_name)
-        tpl_badge.setStyleSheet("""
-            background-color: #4F46E522;
-            color: #6366F1;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 6px;
-        """)
+        tpl_badge.setProperty("class", "TemplateBadge")
         
         top_row.addWidget(name_lbl)
         top_row.addStretch()
