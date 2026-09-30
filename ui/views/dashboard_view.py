@@ -67,7 +67,6 @@ class DashboardView(QWidget):
         # Scrollable Body
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("background: transparent; border: none;")
         
         content = QWidget()
         self.content_layout = QVBoxLayout(content)
@@ -91,29 +90,22 @@ class DashboardView(QWidget):
 
         # CV Completion Summary Banner Card
         self.completion_banner = QFrame()
-        self.completion_banner.setStyleSheet("""
-            QFrame {
-                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #1E1B4B, stop:1 #1E293B);
-                border: 1px solid #4338CA;
-                border-radius: 12px;
-                padding: 16px;
-            }
-        """)
+        self.completion_banner.setProperty("class", "CompletionBanner")
         cb_layout = QHBoxLayout(self.completion_banner)
-        cb_layout.setContentsMargins(16, 12, 16, 12)
+        cb_layout.setContentsMargins(20, 16, 20, 16)
         
         cb_info = QVBoxLayout()
         cb_title = QLabel("Overall Profile Readiness")
-        cb_title.setStyleSheet("font-size: 15px; font-weight: 700; color: #FFFFFF;")
+        cb_title.setProperty("class", "BannerTitle")
         self.cb_desc = QLabel("Add metrics to experience and customize templates to reach 100% job readiness.")
-        self.cb_desc.setStyleSheet("font-size: 12px; color: #C7D2FE;")
+        self.cb_desc.setProperty("class", "BannerSubtitle")
         cb_info.addWidget(cb_title)
         cb_info.addWidget(self.cb_desc)
         cb_layout.addLayout(cb_info)
         cb_layout.addStretch()
 
         self.cb_pct_lbl = QLabel("86%")
-        self.cb_pct_lbl.setStyleSheet("font-size: 26px; font-weight: 800; color: #10B981;")
+        self.cb_pct_lbl.setProperty("class", "BannerPct")
         cb_layout.addWidget(self.cb_pct_lbl)
 
         self.content_layout.addWidget(self.completion_banner)
