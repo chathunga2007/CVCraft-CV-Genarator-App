@@ -52,7 +52,6 @@ class JobMatchView(QWidget):
         # Scrollable analysis area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("background: transparent; border: none;")
 
         content = QWidget()
         c_layout = QVBoxLayout(content)
@@ -189,13 +188,13 @@ class JobMatchView(QWidget):
 
         if score >= 75:
             self.score_val_lbl.setStyleSheet("font-size: 32px; font-weight: 800; color: #10B981;")
-            self.score_bar.setStyleSheet("QProgressBar { background: #0F172A; } QProgressBar::chunk { background: #10B981; }")
+            self.score_bar.setStyleSheet("QProgressBar::chunk { background: #10B981; }")
         elif score >= 50:
             self.score_val_lbl.setStyleSheet("font-size: 32px; font-weight: 800; color: #F59E0B;")
-            self.score_bar.setStyleSheet("QProgressBar { background: #0F172A; } QProgressBar::chunk { background: #F59E0B; }")
+            self.score_bar.setStyleSheet("QProgressBar::chunk { background: #F59E0B; }")
         else:
             self.score_val_lbl.setStyleSheet("font-size: 32px; font-weight: 800; color: #EF4444;")
-            self.score_bar.setStyleSheet("QProgressBar { background: #0F172A; } QProgressBar::chunk { background: #EF4444; }")
+            self.score_bar.setStyleSheet("QProgressBar::chunk { background: #EF4444; }")
 
         m_skills = result["matching_skills"]
         self.matching_text.setText(" • ".join(m_skills) if m_skills else "No direct technical keyword matches found.")
