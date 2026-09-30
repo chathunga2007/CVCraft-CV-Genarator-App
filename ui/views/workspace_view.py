@@ -301,7 +301,6 @@ class WorkspaceView(QWidget):
 
         scroll_form = QScrollArea()
         scroll_form.setWidgetResizable(True)
-        scroll_form.setStyleSheet("background: transparent; border: none;")
 
         self.form_stack = QStackedWidget()
         self._build_personal_form()
