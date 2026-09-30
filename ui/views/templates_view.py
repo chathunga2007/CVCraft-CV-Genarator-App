@@ -46,7 +46,6 @@ class TemplatesView(QWidget):
         # Scrollable Templates Grid
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("background: transparent; border: none;")
 
         self.grid_widget = QWidget()
         self.grid = QGridLayout(self.grid_widget)
