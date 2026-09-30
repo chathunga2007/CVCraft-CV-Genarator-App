@@ -12,8 +12,8 @@ class LogoWidget(QWidget):
     def __init__(self, compact: bool = False, parent=None):
         super().__init__(parent)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(12)
+        layout.setContentsMargins(2, 4, 4, 4)
+        layout.setSpacing(10)
 
         icon_label = QLabel()
         if LOGO_PATH.exists():
@@ -33,13 +33,14 @@ class LogoWidget(QWidget):
             text_container = QWidget()
             text_layout = QVBoxLayout(text_container)
             text_layout.setContentsMargins(0, 0, 0, 0)
-            text_layout.setSpacing(1)
+            text_layout.setSpacing(2)
 
             title_label = QLabel(APP_NAME)
-            title_label.setStyleSheet("font-size: 18px; font-weight: 800; color: #FFFFFF; letter-spacing: 0.5px;")
+            title_label.setProperty("class", "LogoTitle")
 
             tagline_label = QLabel(APP_TAGLINE)
-            tagline_label.setStyleSheet("font-size: 10px; font-weight: 500; color: #818CF8; letter-spacing: 0.2px;")
+            tagline_label.setProperty("class", "LogoTagline")
+            tagline_label.setWordWrap(False)
 
             text_layout.addWidget(title_label)
             text_layout.addWidget(tagline_label)
