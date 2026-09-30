@@ -39,8 +39,18 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"{APP_NAME} — Build. Craft. Get Noticed.")
-        self.resize(1180, 740)
+        self.resize(1200, 760)
         self.setMinimumSize(960, 560)
+
+        # Center on primary screen
+        from PyQt6.QtWidgets import QApplication
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geom = screen.geometry()
+            self.move(
+                max(0, (screen_geom.width() - 1200) // 2),
+                max(0, (screen_geom.height() - 760) // 2)
+            )
 
         # Set Window Icon
         ico_path = ASSETS_DIR / "cvcraft.ico"
@@ -52,7 +62,6 @@ class MainWindow(QMainWindow):
 
         # Apply Saved Theme Globally
         current_theme = self.settings_repo.get("theme", "dark")
-        from PyQt6.QtWidgets import QApplication
         app = QApplication.instance()
         if app:
             app.setStyleSheet(get_stylesheet(current_theme))
@@ -82,7 +91,7 @@ class MainWindow(QMainWindow):
     def _setup_sidebar(self):
         self.sidebar = QWidget()
         self.sidebar.setObjectName("Sidebar")
-        self.sidebar.setFixedWidth(200)
+        self.sidebar.setFixedWidth(225)
         s_layout = QVBoxLayout(self.sidebar)
         s_layout.setContentsMargins(10, 16, 10, 16)
         s_layout.setSpacing(6)
@@ -231,7 +240,7 @@ class MainWindow(QMainWindow):
                 btn.setToolTip(label)
                 btn.setStyleSheet("padding: 9px 0px; text-align: center; font-size: 15px;")
         else:
-            self.sidebar.setFixedWidth(200)
+            self.sidebar.setFixedWidth(225)
             self.logo_w.show()
             self.profile_lbl.show()
             self.ver_lbl.show()
