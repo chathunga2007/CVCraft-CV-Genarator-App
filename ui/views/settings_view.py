@@ -206,7 +206,10 @@ class SettingsView(QWidget):
             QMessageBox.critical(self, "Backup Failed", f"Could not create backup: {str(e)}")
 
     def _restore_backup(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Backup Zip File", str(BACKUPS_DIR), "Zip Archives (*.zip)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Select Backup Zip File", str(BACKUPS_DIR), "Zip Archives (*.zip)",
+            options=QFileDialog.Option.DontUseNativeDialog
+        )
         if file_path:
             reply = QMessageBox.warning(
                 self, "Confirm Restore",
