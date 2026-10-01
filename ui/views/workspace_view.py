@@ -230,7 +230,13 @@ class WorkspaceView(QWidget):
         print_btn.clicked.connect(self.print_pdf)
         tb_layout.addWidget(print_btn)
 
-        # Export PDF Button
+        # Export Buttons: PDF and High-Res Image
+        self.export_img_btn = QPushButton("🖼️ Export Image")
+        self.export_img_btn.setProperty("class", "SecondaryBtn")
+        self.export_img_btn.setToolTip("Export 300 DPI high-resolution image (PNG)")
+        self.export_img_btn.clicked.connect(self.export_image)
+        tb_layout.addWidget(self.export_img_btn)
+
         export_btn = QPushButton("Export PDF")
         export_btn.setProperty("class", "PrimaryBtn")
         export_btn.clicked.connect(self.export_pdf)
@@ -1545,6 +1551,18 @@ class WorkspaceView(QWidget):
             PDFService.export_pdf_file(self.cv, file_path)
             self.repo.record_export(self.cv.id, self.cv.name, file_path)
             QMessageBox.information(self, "Export Successful", f"Your CV has been exported to:\n{file_path}")
+
+    def export_image(self):
+        if not self.cv: return
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export High-Res Image (300 DPI)", f"{self.cv.name.replace(' ', '_')}.png", "PNG Images (*.png)"
+        )
+        if file_path:
+            saved_paths = PDFService.export_images(self.cv, file_path, dpi=300)
+            if saved_paths:
+                self.repo.record_export(self.cv.id, self.cv.name, saved_paths[0])
+                msg = "Your CV has been exported as high-resolution 300 DPI image:\n" + "\n".join(saved_paths)
+                QMessageBox.information(self, "Image Export Successful", msg)
 
     def print_pdf(self):
         if not self.cv: return
