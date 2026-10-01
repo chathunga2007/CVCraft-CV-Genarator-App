@@ -104,7 +104,12 @@ class PDFService:
         }
 
     @staticmethod
-    def prepare_photo(photo_path: str, style: str = "circle", size: int = 120) -> Optional[io.BytesIO]:
+    def prepare_photo(photo_path: str, style: str = "circle", size: int = 600) -> Optional[io.BytesIO]:
+        """
+        Processes and renders a profile photo into a crystal-clear high-resolution PNG buffer.
+        Uses 4x supersampled mask generation and LANCZOS downsampling for razor-sharp antialiasing,
+        completely eliminating blurry edges or low-DPI pixelation in exported PDFs and images.
+        """
         if not photo_path or not os.path.exists(photo_path):
             return None
         try:
@@ -115,25 +120,36 @@ class PDFService:
             right = (im.width + min_dim) / 2
             bottom = (im.height + min_dim) / 2
             im = im.crop((left, top, right, bottom))
-            im = im.resize((size, size), PILImage.Resampling.LANCZOS)
+            
+            # Target resolution: at least 600x600 px for ultra-sharp 300-600 DPI print fidelity
+            target_size = max(size, 600)
+            im = im.resize((target_size, target_size), PILImage.Resampling.LANCZOS)
+
+            # Supersample mask at 4x for silky smooth anti-aliased curved borders
+            mask_scale = 4
+            hi_dim = target_size * mask_scale
 
             if style == "circle":
-                mask = PILImage.new('L', (size, size), 0)
-                draw = ImageDraw.Draw(mask)
-                draw.ellipse((0, 0, size, size), fill=255)
-                output = PILImage.new('RGBA', (size, size), (255, 255, 255, 0))
+                hi_mask = PILImage.new('L', (hi_dim, hi_dim), 0)
+                draw = ImageDraw.Draw(hi_mask)
+                draw.ellipse((0, 0, hi_dim - 1, hi_dim - 1), fill=255)
+                mask = hi_mask.resize((target_size, target_size), PILImage.Resampling.LANCZOS)
+
+                output = PILImage.new('RGBA', (target_size, target_size), (255, 255, 255, 0))
                 output.paste(im, (0, 0), mask=mask)
                 im = output
             elif style == "square":
-                mask = PILImage.new('L', (size, size), 0)
-                draw = ImageDraw.Draw(mask)
-                draw.rounded_rectangle((0, 0, size, size), radius=14, fill=255)
-                output = PILImage.new('RGBA', (size, size), (255, 255, 255, 0))
+                hi_mask = PILImage.new('L', (hi_dim, hi_dim), 0)
+                draw = ImageDraw.Draw(hi_mask)
+                draw.rounded_rectangle((0, 0, hi_dim - 1, hi_dim - 1), radius=16 * mask_scale, fill=255)
+                mask = hi_mask.resize((target_size, target_size), PILImage.Resampling.LANCZOS)
+
+                output = PILImage.new('RGBA', (target_size, target_size), (255, 255, 255, 0))
                 output.paste(im, (0, 0), mask=mask)
                 im = output
 
             buf = io.BytesIO()
-            im.save(buf, format="PNG")
+            im.save(buf, format="PNG", optimize=True)
             buf.seek(0)
             return buf
         except Exception:
@@ -143,10 +159,12 @@ class PDFService:
     def generate_pdf_bytes(cls, cv: CVDocument) -> bytes:
         """Generates standard A4 PDF document in memory and returns bytes."""
         buffer = io.BytesIO()
-        template_id = cv.template_id or "modern"
+        template_id = cv.template_id or "classic_sidebar"
         
         # Build according to selected template
-        if template_id == "ats_friendly":
+        if template_id == "classic_sidebar":
+            cls._build_classic_sidebar(buffer, cv)
+        elif template_id == "ats_friendly":
             cls._build_ats_friendly(buffer, cv)
         elif template_id == "minimal":
             cls._build_minimal(buffer, cv)
@@ -172,6 +190,33 @@ class PDFService:
         with open(destination_path, "wb") as f:
             f.write(pdf_bytes)
         return destination_path
+
+    @classmethod
+    def export_images(cls, cv: CVDocument, destination_base_path: str, dpi: int = 300) -> List[str]:
+        """
+        Renders every page of the CV document to 300 DPI ultra-high-definition PNG images.
+        """
+        pdf_bytes = cls.generate_pdf_bytes(cv)
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        saved_paths = []
+        base = Path(destination_base_path)
+        stem = base.stem
+        parent = base.parent
+        parent.mkdir(parents=True, exist_ok=True)
+
+        total_pages = len(doc)
+        for i in range(total_pages):
+            page = doc.load_page(i)
+            # 300 DPI produces crystal-clear ~2480x3508 pixels on standard A4
+            pix = page.get_pixmap(dpi=dpi)
+            if total_pages == 1:
+                target_file = parent / f"{stem}.png"
+            else:
+                target_file = parent / f"{stem}_page_{i+1}.png"
+            pix.save(str(target_file))
+            saved_paths.append(str(target_file))
+        doc.close()
+        return saved_paths
 
     @classmethod
     def render_pdf_to_images(cls, pdf_bytes: bytes, dpi: int = 150) -> List[PILImage.Image]:
@@ -230,7 +275,7 @@ class PDFService:
 
         photo_buf = None
         if cv.customization.show_photo and cv.customization.photo_style != "none":
-            photo_buf = cls.prepare_photo(cv.personal.profile_photo_path, cv.customization.photo_style, size=90)
+            photo_buf = cls.prepare_photo(cv.personal.profile_photo_path, cv.customization.photo_style, size=600)
 
         if photo_buf:
             rl_img = RLImage(photo_buf, width=65, height=65)
@@ -888,7 +933,7 @@ class PDFService:
 
         photo_buf = None
         if cv.customization.show_photo and cv.customization.photo_style != "none":
-            photo_buf = cls.prepare_photo(cv.personal.profile_photo_path, cv.customization.photo_style, size=90)
+            photo_buf = cls.prepare_photo(cv.personal.profile_photo_path, cv.customization.photo_style, size=600)
 
         if photo_buf:
             rl_img = RLImage(photo_buf, width=65, height=65)
@@ -1011,3 +1056,307 @@ class PDFService:
             story.extend(right_story)
 
         doc.build(story, canvasmaker=NumberedCanvas)
+
+    # =========================================================================
+    # TEMPLATE 9: CLASSIC SIDEBAR (Modern Two-Column with Profile Avatar & Timeline)
+    # Inspired by clean contemporary CVs with framed photo, left contact/skills
+    # sidebar, and structured right timeline.
+    # =========================================================================
+    @classmethod
+    def _build_classic_sidebar(cls, buffer: io.BytesIO, cv: CVDocument):
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            leftMargin=28,
+            rightMargin=28,
+            topMargin=28,
+            bottomMargin=28
+        )
+        pal = cls.get_palette_colors(cv.customization.accent_palette)
+        f_reg, f_bold, f_italic = get_font_names(cv.customization.font_family)
+        content_w = A4[0] - 56  # 539.27 pt
+
+        story = []
+        full_name = (cv.personal.full_name or "Your Name").strip() or "Your Name"
+        pro_title = (cv.personal.professional_title or "Professional Title").strip()
+
+        # Clean, modern typography matching the user's CV
+        name_style = ParagraphStyle(
+            'ClassicName', fontName=f_bold, fontSize=24, leading=28,
+            textColor=colors.HexColor('#1E293B')
+        )
+        title_style = ParagraphStyle(
+            'ClassicTitle', fontName=f_reg, fontSize=12, leading=16,
+            textColor=colors.HexColor('#475569')
+        )
+        sec_h = ParagraphStyle(
+            'ClassicSecH', fontName=f_bold, fontSize=10, leading=13,
+            textColor=colors.HexColor('#1E293B'), spaceBefore=8, spaceAfter=4
+        )
+        sub_h = ParagraphStyle(
+            'ClassicSubH', fontName=f_bold, fontSize=8.5, leading=11,
+            textColor=colors.HexColor('#334155'), spaceBefore=4, spaceAfter=2
+        )
+        body_p = ParagraphStyle(
+            'ClassicBody', fontName=f_reg, fontSize=8.2, leading=11.5,
+            textColor=colors.HexColor('#334155')
+        )
+        item_h = ParagraphStyle(
+            'ClassicItemH', fontName=f_bold, fontSize=9, leading=11.5,
+            textColor=colors.HexColor('#1E293B')
+        )
+        item_sub = ParagraphStyle(
+            'ClassicItemSub', fontName=f_reg, fontSize=8, leading=10.5,
+            textColor=colors.HexColor('#64748B')
+        )
+        item_date = ParagraphStyle(
+            'ClassicItemDate', fontName=f_bold, fontSize=8.5, leading=11,
+            textColor=colors.HexColor('#475569'), alignment=2
+        )
+
+        def make_spaced(title: str) -> str:
+            cleaned = title.strip().rstrip(':').upper()
+            return " ".join(list(cleaned)) + " :"
+
+        # ---------------------------------------------------------------------
+        # 1. TOP HEADER (Avatar on left, Name & Title on right)
+        # ---------------------------------------------------------------------
+        photo_buf = None
+        if cv.personal.profile_photo_path and os.path.exists(cv.personal.profile_photo_path):
+            photo_buf = cls.prepare_photo(
+                cv.personal.profile_photo_path,
+                style=cv.customization.photo_style if cv.customization.photo_style != "none" else "circle",
+                size=600
+            )
+
+        name_cell = [
+            Paragraph(xml_escape(full_name), name_style),
+            Spacer(1, 4),
+            Paragraph(xml_escape(pro_title), title_style)
+        ]
+
+        if photo_buf:
+            rl_img = RLImage(photo_buf, width=76, height=76)
+            hdr_table = Table([[rl_img, name_cell]], colWidths=[88, content_w - 88])
+            hdr_table.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 0),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ('LEFTPADDING', (1,0), (1,0), 12),
+            ]))
+            story.append(hdr_table)
+        else:
+            story.extend(name_cell)
+
+        # Full-width horizontal divider line
+        story.append(Spacer(1, 6))
+        story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#CBD5E1'), spaceBefore=2, spaceAfter=8))
+
+        # ---------------------------------------------------------------------
+        # 2. TWO-COLUMN SPLIT (Left: Contact, Skills, Languages | Right: About, Edu, Activities, Ref)
+        # ---------------------------------------------------------------------
+        left_w = 175
+        right_w = content_w - left_w  # ~364 pt
+
+        left_story = []
+        right_story = []
+
+        # === LEFT COLUMN: CONTACT ===
+        left_story.append(Paragraph(make_spaced("CONTACT"), sec_h))
+        contacts = []
+        if cv.personal.phone:
+            contacts.append(f"📞 {xml_escape(cv.personal.phone)}")
+        if cv.personal.email:
+            contacts.append(f"✉️ {xml_escape(cv.personal.email)}")
+        if cv.personal.linkedin:
+            contacts.append(f"🔗 {xml_escape(cv.personal.linkedin)}")
+        if cv.personal.github:
+            contacts.append(f"💻 {xml_escape(cv.personal.github)}")
+        if cv.personal.website:
+            contacts.append(f"🌐 {xml_escape(cv.personal.website)}")
+        if cv.personal.location:
+            contacts.append(f"📍 {xml_escape(cv.personal.location)}")
+
+        for c_txt in contacts:
+            left_story.append(Paragraph(c_txt, body_p))
+            left_story.append(Spacer(1, 3))
+        left_story.append(Spacer(1, 6))
+
+        # === LEFT COLUMN: SKILLS ===
+        if cv.skills:
+            left_story.append(Paragraph(make_spaced("SKILLS"), sec_h))
+            
+            skills_by_cat = {}
+            for s in cv.skills:
+                skills_by_cat.setdefault(s.category or "Skills", []).append(s)
+
+            for cat, items in skills_by_cat.items():
+                left_story.append(Paragraph(f"<b><u>{xml_escape(cat.upper())}:</u></b>", sub_h))
+                bullet_lines = [f"• {xml_escape(item.name)}" for item in items]
+                left_story.append(Paragraph("<br/>".join(bullet_lines), body_p))
+                left_story.append(Spacer(1, 4))
+            left_story.append(Spacer(1, 4))
+
+        # === LEFT COLUMN: LANGUAGES ===
+        if cv.languages:
+            left_story.append(Paragraph(make_spaced("LANGUAGES"), sec_h))
+            lang_lines = [
+                f"• {xml_escape(l.name)}" + (f" ({xml_escape(l.proficiency)})" if l.proficiency and l.proficiency != "Native" else "")
+                for l in cv.languages
+            ]
+            left_story.append(Paragraph("<br/>".join(lang_lines), body_p))
+            left_story.append(Spacer(1, 6))
+
+        if cv.certifications:
+            left_story.append(Paragraph(make_spaced("CERTIFICATIONS"), sec_h))
+            for cert in cv.certifications:
+                left_story.append(Paragraph(f"<b>{xml_escape(cert.name)}</b>", item_h))
+                sub_txt = xml_escape(cert.issuer)
+                if cert.issue_date: sub_txt += f" ({xml_escape(cert.issue_date)})"
+                left_story.append(Paragraph(sub_txt, item_sub))
+                left_story.append(Spacer(1, 3))
+            left_story.append(Spacer(1, 4))
+
+        # === RIGHT COLUMN: ABOUT ME ===
+        if cv.summary:
+            right_story.append(Paragraph(make_spaced("ABOUT ME"), sec_h))
+            right_story.append(Paragraph(xml_multiline(cv.summary), body_p))
+            right_story.append(Spacer(1, 8))
+
+        # === RIGHT COLUMN: EDUCATION ===
+        if cv.education:
+            right_story.append(Paragraph(make_spaced("EDUCATION"), sec_h))
+            for edu in cv.education:
+                date_str = ""
+                if edu.start_date and edu.end_date:
+                    date_str = f"{xml_escape(edu.start_date)}–{xml_escape(edu.end_date)}"
+                elif edu.start_date or edu.end_date:
+                    date_str = xml_escape(edu.start_date or edu.end_date)
+
+                edu_row = Table(
+                    [[
+                        Paragraph(f"<b><u>{xml_escape(edu.institution)}</u></b>", item_h),
+                        Paragraph(date_str, item_date)
+                    ]],
+                    colWidths=[right_w - 90, 90]
+                )
+                edu_row.setStyle(TableStyle([
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('LEFTPADDING', (0,0), (-1,-1), 0),
+                    ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                    ('TOPPADDING', (0,0), (-1,-1), 0),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ]))
+                right_story.append(edu_row)
+                if edu.degree or edu.field_of_study:
+                    deg_str = xml_escape(edu.degree)
+                    if edu.field_of_study and edu.field_of_study != edu.degree:
+                        deg_str += f" in {xml_escape(edu.field_of_study)}"
+                    right_story.append(Paragraph(deg_str, item_sub))
+                if edu.grade:
+                    right_story.append(Paragraph(f"Grade: {xml_escape(edu.grade)}", item_sub))
+                if edu.description:
+                    right_story.append(Paragraph(xml_multiline(edu.description), body_p))
+                right_story.append(Spacer(1, 6))
+            right_story.append(Spacer(1, 4))
+
+        # === RIGHT COLUMN: EXPERIENCE & ACTIVITIES ===
+        if cv.experience:
+            right_story.append(Paragraph(make_spaced("EXPERIENCE"), sec_h))
+            for exp in cv.experience:
+                date_str = f"{xml_escape(exp.start_date)}–{xml_escape(exp.end_date) or ('Present' if exp.is_current else '')}"
+                exp_row = Table(
+                    [[
+                        Paragraph(f"<b>{xml_escape(exp.job_title)}</b> — <i>{xml_escape(exp.company)}</i>", item_h),
+                        Paragraph(date_str, item_date)
+                    ]],
+                    colWidths=[right_w - 90, 90]
+                )
+                exp_row.setStyle(TableStyle([
+                    ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                    ('LEFTPADDING', (0,0), (-1,-1), 0),
+                    ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                    ('TOPPADDING', (0,0), (-1,-1), 0),
+                    ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                ]))
+                right_story.append(exp_row)
+                if exp.location:
+                    right_story.append(Paragraph(xml_escape(exp.location), item_sub))
+                if exp.responsibilities:
+                    right_story.append(Paragraph(xml_multiline(exp.responsibilities), body_p))
+                if exp.achievements:
+                    right_story.append(Paragraph(f"<b>Key Highlight:</b> {xml_escape(exp.achievements)}", body_p))
+                right_story.append(Spacer(1, 6))
+            right_story.append(Spacer(1, 4))
+
+        if cv.projects:
+            right_story.append(Paragraph(make_spaced("PROJECTS"), sec_h))
+            for proj in cv.projects:
+                p_title = f"<b>{xml_escape(proj.name)}</b>"
+                if proj.technologies: p_title += f": {xml_escape(proj.technologies)}"
+                right_story.append(Paragraph(p_title, item_h))
+                if proj.description:
+                    right_story.append(Paragraph(xml_multiline(proj.description), body_p))
+                right_story.append(Spacer(1, 4))
+            right_story.append(Spacer(1, 4))
+
+        # Custom sections (e.g. CURRICULAR ACTIVITIES)
+        if cv.custom_sections:
+            for csec in cv.custom_sections:
+                if csec.title:
+                    right_story.append(Paragraph(make_spaced(csec.title), sec_h))
+                    for itm in csec.items:
+                        title_text = f"<b>{xml_escape(itm.title)}</b>"
+                        if itm.subtitle:
+                            title_text += f": {xml_escape(itm.subtitle)}"
+                        right_story.append(Paragraph(title_text, item_h))
+                        if itm.description:
+                            right_story.append(Paragraph(xml_multiline(itm.description), body_p))
+                        right_story.append(Spacer(1, 3))
+                    right_story.append(Spacer(1, 4))
+
+        if cv.volunteer:
+            right_story.append(Paragraph(make_spaced("ACTIVITIES & LEADERSHIP"), sec_h))
+            for v in cv.volunteer:
+                d_str = f" ({xml_escape(v.start_date)}–{xml_escape(v.end_date)})" if v.start_date or v.end_date else ""
+                right_story.append(Paragraph(f"<b>{xml_escape(v.role)}</b>: {xml_escape(v.organization)}{d_str}", item_h))
+                if v.description:
+                    right_story.append(Paragraph(xml_multiline(v.description), body_p))
+                right_story.append(Spacer(1, 4))
+            right_story.append(Spacer(1, 4))
+
+        # === RIGHT COLUMN: REFERENCES ===
+        if cv.references_on_request:
+            right_story.append(Paragraph(make_spaced("REFERENCES"), sec_h))
+            right_story.append(Paragraph("REFERENCE CAN BE PROVIDED UPON REQUEST", body_p))
+        elif cv.references:
+            right_story.append(Paragraph(make_spaced("REFERENCES"), sec_h))
+            for ref in cv.references:
+                right_story.append(Paragraph(f"<b>{xml_escape(ref.name)}</b> — {xml_escape(ref.job_title)}, {xml_escape(ref.company)}", item_h))
+                ref_sub = []
+                if ref.email: ref_sub.append(ref.email)
+                if ref.phone: ref_sub.append(ref.phone)
+                if ref_sub:
+                    right_story.append(Paragraph(xml_escape(" | ".join(ref_sub)), item_sub))
+                right_story.append(Spacer(1, 3))
+
+        # ---------------------------------------------------------------------
+        # 3. ASSEMBLE TWO-COLUMN TABLE WITH VERTICAL DIVIDER
+        # ---------------------------------------------------------------------
+        body_table = Table([[left_story, right_story]], colWidths=[left_w, right_w])
+        body_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('LEFTPADDING', (0,0), (0,0), 0),
+            ('RIGHTPADDING', (0,0), (0,0), 12),
+            ('LEFTPADDING', (1,0), (1,0), 12),
+            ('RIGHTPADDING', (1,0), (1,0), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+            ('LINEAFTER', (0,0), (0,0), 0.75, colors.HexColor('#CBD5E1')),
+        ]))
+        story.append(body_table)
+
+        doc.build(story, canvasmaker=NumberedCanvas)
+
