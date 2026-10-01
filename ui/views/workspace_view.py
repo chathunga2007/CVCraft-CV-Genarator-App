@@ -1425,12 +1425,18 @@ class WorkspaceView(QWidget):
     # PHOTO MANAGEMENT
     # =========================================================================
     def _upload_photo(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select Profile Photo", "", "Images (*.png *.jpg *.jpeg *.webp)")
-        if file_path:
-            self.cv.personal.profile_photo_path = file_path
-            self._update_photo_preview()
-            self._schedule_save()
-            self.preview_widget.update_preview(self.cv)
+        try:
+            file_path, _ = QFileDialog.getOpenFileName(
+                self, "Select Profile Photo", "", "Images (*.png *.jpg *.jpeg *.webp)",
+                options=QFileDialog.Option.DontUseNativeDialog
+            )
+            if file_path:
+                self.cv.personal.profile_photo_path = file_path
+                self._update_photo_preview()
+                self._schedule_save()
+                self.preview_widget.update_preview(self.cv)
+        except Exception as e:
+            QMessageBox.warning(self, "Photo Selection", f"Could not load selected photo:\n{e}")
 
     def _remove_photo(self):
         self.cv.personal.profile_photo_path = ""
@@ -1544,33 +1550,51 @@ class WorkspaceView(QWidget):
 
     def export_pdf(self):
         if not self.cv: return
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export PDF", f"{self.cv.name.replace(' ', '_')}.pdf", "PDF Documents (*.pdf)"
-        )
-        if file_path:
-            PDFService.export_pdf_file(self.cv, file_path)
-            self.repo.record_export(self.cv.id, self.cv.name, file_path)
-            QMessageBox.information(self, "Export Successful", f"Your CV has been exported to:\n{file_path}")
+        try:
+            suggested_name = f"{self.cv.name.replace(' ', '_')}.pdf"
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "Export PDF", suggested_name, "PDF Documents (*.pdf)",
+                options=QFileDialog.Option.DontUseNativeDialog
+            )
+            if file_path:
+                if not file_path.lower().endswith(".pdf"):
+                    file_path += ".pdf"
+                PDFService.export_pdf_file(self.cv, file_path)
+                self.repo.record_export(self.cv.id, self.cv.name, file_path)
+                QMessageBox.information(self, "Export Successful", f"Your CV has been exported to:\n{file_path}")
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Export Failed", f"An error occurred while exporting the PDF document:\n\n{str(e)}")
 
     def export_image(self):
         if not self.cv: return
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export High-Res Image (300 DPI)", f"{self.cv.name.replace(' ', '_')}.png", "PNG Images (*.png)"
-        )
-        if file_path:
-            saved_paths = PDFService.export_images(self.cv, file_path, dpi=300)
-            if saved_paths:
-                self.repo.record_export(self.cv.id, self.cv.name, saved_paths[0])
-                msg = "Your CV has been exported as high-resolution 300 DPI image:\n" + "\n".join(saved_paths)
-                QMessageBox.information(self, "Image Export Successful", msg)
+        try:
+            suggested_name = f"{self.cv.name.replace(' ', '_')}.png"
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "Export High-Res Image (300 DPI)", suggested_name, "PNG Images (*.png)",
+                options=QFileDialog.Option.DontUseNativeDialog
+            )
+            if file_path:
+                if not file_path.lower().endswith(".png"):
+                    file_path += ".png"
+                saved_paths = PDFService.export_images(self.cv, file_path, dpi=300)
+                if saved_paths:
+                    self.repo.record_export(self.cv.id, self.cv.name, saved_paths[0])
+                    msg = "Your CV has been exported as high-resolution 300 DPI image:\n" + "\n".join(saved_paths)
+                    QMessageBox.information(self, "Image Export Successful", msg)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Export Failed", f"An error occurred while exporting image:\n\n{str(e)}")
 
     def print_pdf(self):
         if not self.cv: return
-        import tempfile
-        temp_dir = tempfile.gettempdir()
-        pdf_path = os.path.join(temp_dir, f"{self.cv.name.replace(' ', '_')}_cvcraft_print.pdf")
-        PDFService.export_pdf_file(self.cv, pdf_path)
         try:
+            import tempfile
+            temp_dir = tempfile.gettempdir()
+            pdf_path = os.path.join(temp_dir, f"{self.cv.name.replace(' ', '_')}_cvcraft_print.pdf")
+            PDFService.export_pdf_file(self.cv, pdf_path)
             if sys.platform == "win32":
                 os.startfile(pdf_path)
             else:
