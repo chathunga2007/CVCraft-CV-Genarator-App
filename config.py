@@ -9,11 +9,25 @@ from pathlib import Path
 APP_NAME = "CVCraft"
 APP_TAGLINE = "Build. Craft. Get Noticed."
 APP_VERSION = "1.0.0"
-APP_DEVELOPER = "CVCraft Team"
-APP_LICENSE = "Commercial / Proprietary"
+APP_DEVELOPER = "Chathunga Bimsara"
+APP_AUTHOR = "Chathunga Bimsara"
+APP_GITHUB = "https://github.com/chathunga2007/CVCraft-CV-Genarator-App"
+APP_LICENSE = "MIT License"
+
+import sys
 
 # Paths
-BASE_DIR = Path(__file__).resolve().parent
+if getattr(sys, 'frozen', False):
+    exe_dir = Path(sys.executable).resolve().parent
+    if (exe_dir / "assets").exists():
+        BASE_DIR = exe_dir
+    elif (exe_dir.parent.parent / "assets").exists():
+        BASE_DIR = exe_dir.parent.parent
+    else:
+        BASE_DIR = exe_dir
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+
 ASSETS_DIR = BASE_DIR / "assets"
 LOGO_PATH = ASSETS_DIR / "CVCraft-logo.png"
 USER_DATA_DIR = BASE_DIR / "data"
@@ -87,6 +101,13 @@ AVAILABLE_FONTS = [
 ]
 
 TEMPLATES = [
+    {
+        "id": "classic_sidebar",
+        "name": "Classic Sidebar",
+        "description": "Featured recruiter-favorite: framed circular photo, dedicated left sidebar for contact & skills, and clean structured timeline.",
+        "badge": "Featured",
+        "preview_bg": "#2563EB"
+    },
     {
         "id": "modern",
         "name": "Modern Tech",
