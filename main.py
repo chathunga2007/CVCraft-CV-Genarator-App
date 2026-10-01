@@ -6,8 +6,25 @@ Product: CVCraft — "Build. Craft. Get Noticed."
 import sys
 import os
 import ctypes
-from pathlib import Path
 
+# 1. Windows Taskbar AppUserModelID Integration (MUST execute before any PyQt6 or COM imports!)
+if sys.platform == "win32":
+    try:
+        from ctypes import wintypes
+        shell32 = ctypes.windll.shell32
+        shell32.SetCurrentProcessExplicitAppUserModelID.argtypes = [wintypes.LPCWSTR]
+        shell32.SetCurrentProcessExplicitAppUserModelID.restype = ctypes.c_long
+        shell32.SetCurrentProcessExplicitAppUserModelID("CVCraft.ProfessionalResumeBuilder.App.1.0")
+    except Exception:
+        pass
+    try:
+        import threading
+        from register_app import register_shortcuts_and_app_id
+        threading.Thread(target=register_shortcuts_and_app_id, daemon=True).start()
+    except Exception:
+        pass
+
+from pathlib import Path
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtGui import QIcon, QFont
 from PyQt6.QtCore import Qt
@@ -16,34 +33,34 @@ from config import APP_NAME, APP_VERSION, ASSETS_DIR
 from ui.main_window import MainWindow
 from ui.views.splash_view import SplashView
 
-def main():
-    # 1. Windows Taskbar Icon Integration
-    if sys.platform == "win32":
-        try:
-            myappid = "cvcraft.professional.resumebuilder.1.0"
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        except Exception:
-            pass
+def get_app_icon() -> QIcon:
+    ico_p = ASSETS_DIR / "cvcraft.ico"
+    if ico_p.exists():
+        return QIcon(str(ico_p.resolve()))
+    logo_p = ASSETS_DIR / "CVCraft-logo.png"
+    if logo_p.exists():
+        return QIcon(str(logo_p.resolve()))
+    return QIcon()
 
+def main():
     # 2. Initialize Qt Application
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(APP_VERSION)
     app.setOrganizationName("CVCraft")
 
-    # Set Window and Desktop Icon
-    ico_path = ASSETS_DIR / "cvcraft.ico"
-    if ico_path.exists():
-        app.setWindowIcon(QIcon(str(ico_path)))
+    # Set Multi-resolution Window and Desktop Icon
+    app_icon = get_app_icon()
+    app.setWindowIcon(app_icon)
 
-    # Set refined font with standard point size
-    font = QFont("Segoe UI")
-    font.setPointSize(10)
+    # Set refined font with standard point size directly
+    font = QFont("Segoe UI", 10)
     font.setStyleHint(QFont.StyleHint.SansSerif)
     app.setFont(font)
 
     # 3. Splash Screen Startup Flow
     splash = SplashView()
+    splash.setWindowIcon(app_icon)
     screen = app.primaryScreen()
     if screen:
         screen_geom = screen.geometry()
