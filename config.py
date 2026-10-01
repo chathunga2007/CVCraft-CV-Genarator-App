@@ -25,20 +25,37 @@ if getattr(sys, 'frozen', False):
         BASE_DIR = exe_dir.parent.parent
     else:
         BASE_DIR = exe_dir
+    
+    # In Windows installed apps, user data must be in LOCALAPPDATA to guarantee write permissions
+    import shutil
+    appdata = os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or str(Path.home())
+    USER_DATA_DIR = Path(appdata) / "CVCraft" / "data"
+    USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH = USER_DATA_DIR / "cvcraft.db"
+
+    # Seed pre-packaged template database if user db does not exist yet
+    default_db = BASE_DIR / "data" / "cvcraft.db"
+    if not DB_PATH.exists() and default_db.exists():
+        try:
+            shutil.copy2(default_db, DB_PATH)
+        except Exception:
+            pass
 else:
     BASE_DIR = Path(__file__).resolve().parent
+    USER_DATA_DIR = BASE_DIR / "data"
+    USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
+    DB_PATH = USER_DATA_DIR / "cvcraft.db"
 
 ASSETS_DIR = BASE_DIR / "assets"
 LOGO_PATH = ASSETS_DIR / "CVCraft-logo.png"
-USER_DATA_DIR = BASE_DIR / "data"
-USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = USER_DATA_DIR / "cvcraft.db"
 EXPORTS_DIR = USER_DATA_DIR / "exports"
 EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
 BACKUPS_DIR = USER_DATA_DIR / "backups"
 BACKUPS_DIR.mkdir(parents=True, exist_ok=True)
 PHOTOS_DIR = USER_DATA_DIR / "photos"
 PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR = USER_DATA_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Color Palettes
 COLOR_PALETTES = {
