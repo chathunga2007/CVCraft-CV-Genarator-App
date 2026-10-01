@@ -351,20 +351,29 @@ class MainWindow(QMainWindow):
     def quick_export_pdf(self, cv_id: str):
         cv = self.cv_repo.get_by_id(cv_id)
         if not cv: return
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export Document", f"{cv.name.replace(' ', '_')}.pdf", "PDF Documents (*.pdf);;High-Res Images (*.png)"
-        )
-        if file_path:
-            if file_path.lower().endswith(".png"):
-                saved = PDFService.export_images(cv, file_path, dpi=300)
-                if saved:
-                    self.cv_repo.record_export(cv.id, cv.name, saved[0])
-                    self.toast.show_message(f"Exported {len(saved)} image(s) (300 DPI)")
-            else:
-                PDFService.export_pdf_file(cv, file_path)
-                self.cv_repo.record_export(cv.id, cv.name, file_path)
-                self.toast.show_message(f"Exported to {Path(file_path).name}")
-            self.dashboard_view.refresh()
+        try:
+            suggested_name = f"{cv.name.replace(' ', '_')}.pdf"
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "Export Document", suggested_name, "PDF Documents (*.pdf);;High-Res Images (*.png)",
+                options=QFileDialog.Option.DontUseNativeDialog
+            )
+            if file_path:
+                if file_path.lower().endswith(".png"):
+                    saved = PDFService.export_images(cv, file_path, dpi=300)
+                    if saved:
+                        self.cv_repo.record_export(cv.id, cv.name, saved[0])
+                        self.toast.show_message(f"Exported {len(saved)} image(s) (300 DPI)")
+                else:
+                    if not file_path.lower().endswith(".pdf"):
+                        file_path += ".pdf"
+                    PDFService.export_pdf_file(cv, file_path)
+                    self.cv_repo.record_export(cv.id, cv.name, file_path)
+                    self.toast.show_message(f"Exported to {Path(file_path).name}")
+                self.dashboard_view.refresh()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Export Failed", f"An error occurred while exporting:\n\n{str(e)}")
 
     def duplicate_cv(self, cv_id: str):
         new_cv = self.cv_repo.duplicate(cv_id, as_version=False)
@@ -401,18 +410,19 @@ class MainWindow(QMainWindow):
             self.toast.show_message("CV deleted")
 
     def import_cv(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Import CVCraft Document", "", "CVCraft Files (*.cvcv);;JSON Files (*.json)"
-        )
-        if file_path:
-            try:
+        try:
+            file_path, _ = QFileDialog.getOpenFileName(
+                self, "Import CVCraft Document", "", "CVCraft Files (*.cvcv);;JSON Files (*.json)",
+                options=QFileDialog.Option.DontUseNativeDialog
+            )
+            if file_path:
                 cv = ImportExportService.import_cvcv_file(file_path)
                 if cv:
                     score, _ = CVService.calculate_completion(cv)
                     self.cv_repo.save(cv, completion_pct=score)
                     self.toast.show_message(f"Imported: {cv.name}")
                     self.open_editor(cv.id)
-            except Exception as e:
+        except Exception as e:
                 QMessageBox.critical(self, "Import Failed", f"Could not import file: {str(e)}")
 
     def open_tailor_for_cv(self, cv_id: str):
