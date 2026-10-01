@@ -123,7 +123,7 @@ class LivePreviewWidget(QFrame):
             return
         try:
             pdf_bytes = PDFService.generate_pdf_bytes(self.current_cv)
-            pil_images = PDFService.render_pdf_to_images(pdf_bytes, dpi=130)
+            pil_images = PDFService.render_pdf_to_images(pdf_bytes, dpi=180)
             self._on_render_completed(pil_images, pdf_bytes)
         except Exception:
             # Handle empty / partially edited state gracefully
