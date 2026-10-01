@@ -18,7 +18,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 
 from config import (
     LOGO_PATH, APP_NAME, APP_TAGLINE, APP_VERSION, APP_DEVELOPER,
-    APP_LICENSE, USER_DATA_DIR, DB_PATH
+    APP_AUTHOR, APP_GITHUB, APP_LICENSE, USER_DATA_DIR, DB_PATH
 )
 from services.import_export import ImportExportService
 
@@ -87,7 +87,7 @@ class AboutView(QWidget):
         # Badges row
         badges_row = QHBoxLayout()
         badges_row.setSpacing(8)
-        for badge_text in [f"Version {APP_VERSION}", "100% Offline-First", "Commercial Grade", "ReportLab Vector Engine"]:
+        for badge_text in [f"Version {APP_VERSION}", "100% Offline-First", "9 Pro Templates", "ReportLab Vector Engine"]:
             b = QLabel(badge_text)
             b.setStyleSheet("""
                 background-color: rgba(99, 102, 241, 0.2);
@@ -109,6 +109,73 @@ class AboutView(QWidget):
         h_layout.addLayout(brand_box)
         c_layout.addWidget(hero_card)
 
+        # 1.5 Dedicated Developer & Creator Showcase (Chathunga Bimsara)
+        dev_card = QFrame()
+        dev_card.setProperty("class", "Card")
+        dev_card.setStyleSheet("""
+            QFrame.Card {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0B0F19, stop:0.45 #1E1B4B, stop:1 #0F172A);
+                border: 1.5px solid #6366F1;
+                border-radius: 16px;
+                padding: 20px;
+            }
+        """)
+        dev_layout = QHBoxLayout(dev_card)
+        dev_layout.setSpacing(20)
+
+        dev_icon_lbl = QLabel("👨‍💻")
+        dev_icon_lbl.setStyleSheet("""
+            font-size: 38px;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 32px;
+            padding: 10px;
+            border: 1.5px solid #818CF8;
+        """)
+        dev_icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        dev_layout.addWidget(dev_icon_lbl)
+
+        dev_info = QVBoxLayout()
+        dev_info.setSpacing(4)
+
+        dev_title = QLabel("CRAFTED & ARCHITECTED BY")
+        dev_title.setStyleSheet("font-size: 10px; font-weight: 800; color: #818CF8; letter-spacing: 1.5px;")
+
+        dev_name = QLabel("Chathunga Bimsara")
+        dev_name.setStyleSheet("font-size: 22px; font-weight: 900; color: #FFFFFF; letter-spacing: -0.3px;")
+
+        dev_role = QLabel("Lead Developer & Product Architect • Creator of CVCraft")
+        dev_role.setStyleSheet("font-size: 13px; font-weight: 600; color: #A5B4FC;")
+
+        dev_desc = QLabel("Engineered with precision to deliver an uncompromising offline-first resume design experience with ATS optimization, 300 DPI exports, and pixel-perfect vector layouts.")
+        dev_desc.setStyleSheet("font-size: 12px; color: #94A3B8; line-height: 1.4;")
+        dev_desc.setWordWrap(True)
+
+        dev_info.addWidget(dev_title)
+        dev_info.addWidget(dev_name)
+        dev_info.addWidget(dev_role)
+        dev_info.addWidget(dev_desc)
+        dev_layout.addLayout(dev_info, 1)
+
+        github_btn = QPushButton("⭐ View on GitHub")
+        github_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #4F46E5, stop:1 #7C3AED);
+                color: #FFFFFF;
+                font-weight: 700;
+                font-size: 13px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #4338CA, stop:1 #6D28D9);
+            }
+        """)
+        github_btn.clicked.connect(self._open_github)
+        dev_layout.addWidget(github_btn)
+
+        c_layout.addWidget(dev_card)
+
         # 2. Key Product Pillars (Grid)
         sec_title = QLabel("Architectural Pillars & Capabilities")
         sec_title.setProperty("class", "SectionHeader")
@@ -120,7 +187,7 @@ class AboutView(QWidget):
         pillars = [
             ("📄 Vector PDF Engine", "Produces standard A4 documents with pixel-perfect margins, clean font embeddings, and guaranteed vector sharpness for both digital submission and physical printing.", "#4F46E5"),
             ("🎯 ATS-Friendly Layouts", "Includes certified single-column linear templates without confusing tables or graphical blocks, ensuring 99%+ parsing accuracy across corporate applicant tracking systems.", "#10B981"),
-            ("⚡ 8 Tailored Templates", "Carefully architectural designs from Modern Tech, Software Engineer, and Minimalist to Executive Leadership and Academic Research formats.", "#8B5CF6"),
+            ("⚡ 9 Tailored Templates", "Carefully engineered designs from Classic Sidebar, Modern Tech, and Minimalist to Executive Leadership, Developer, and Academic Research formats.", "#8B5CF6"),
             ("🔒 Zero-Cloud Privacy", "All your data, career experiences, and profile photos live exclusively on your local computer in a robust SQLite database. Zero remote telemetry.", "#0EA5E9")
         ]
 
@@ -165,12 +232,13 @@ class AboutView(QWidget):
             row.addWidget(v)
             dc_layout.addLayout(row)
 
+        add_info("Lead Developer:", APP_DEVELOPER)
         add_info("Python Runtime:", f"Python {sys.version.split()[0]} ({sys.platform})")
         add_info("GUI Toolkit:", "PyQt6 & Qt 6.11 Architecture")
         add_info("Local Database Path:", str(DB_PATH))
         add_info("Storage Directory:", str(USER_DATA_DIR))
-        add_info("Licensing Model:", f"{APP_LICENSE} — Offline Distribution")
-        add_info("Developer:", APP_DEVELOPER)
+        add_info("Licensing Model:", f"{APP_LICENSE} — Open & Free")
+        add_info("Repository:", APP_GITHUB)
 
         dc_layout.addSpacing(10)
 
@@ -204,12 +272,13 @@ class AboutView(QWidget):
         lc_layout.setSpacing(8)
 
         changes = [
-            "✨ 8 Production Architectural Templates with distinct layouts, headers, and section hierarchies.",
-            "🚀 High-DPI Real-time Live Preview with sub-millisecond debounced compilation and multi-page pagination.",
-            "🎯 'Tailor My CV' ATS Match Engine with keyword analysis, formatting checks, and one-click integration.",
-            "💡 Offline-First AI Assistant with STAR-method bullet points and executive summary polishing.",
-            "🌓 Dynamic Theme Engine supporting both Deep Indigo Dark Mode and Clean Light Mode.",
-            "🔄 Document Version Control allowing multiple specialized versions per profile.",
+            "✨ Added 'Classic Sidebar' Template — 2-Column layout with circular photo header, distinct vertical divider, and categorized skill badges.",
+            "👁️ Interactive Template Preview Dialog — Full-screen modal with multi-page live rendering, 40%-160% zoom, and seamless template switching.",
+            "🖼️ 300 DPI High-Res Image Export — Instant PNG export and 4x supersampled anti-aliased profile photos.",
+            "🪟 Native Windows 11 Taskbar Integration — Custom AppUserModelID and high-res taskbar icon matching system applications.",
+            "🎯 'Tailor My CV' ATS Match Engine — Keyword extraction, real-time score matching, and missing keyword identification.",
+            "💡 Offline-First AI Assistant — STAR-method bullet refinement and executive summary polishing.",
+            "🌓 Dynamic Theme Engine — Deep Indigo Dark Mode & Clean Modern Light Mode.",
             "📦 Lossless Import & Export (.cvcv) and portable zip backup/restore."
         ]
 
@@ -244,3 +313,10 @@ class AboutView(QWidget):
             )
         except Exception as e:
             QMessageBox.critical(self, "Backup Failed", f"Could not generate backup: {str(e)}")
+
+    def _open_github(self):
+        import webbrowser
+        try:
+            webbrowser.open(APP_GITHUB)
+        except Exception:
+            pass
