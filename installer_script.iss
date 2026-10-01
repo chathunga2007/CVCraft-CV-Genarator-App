@@ -9,7 +9,7 @@
 #define MyAppVersion "v1.0.0"
 #define MyAppPublisher "Chathunga Bimsara"
 #define MyAppURL "https://github.com/chathunga2007/CVCraft-CV-Genarator-App"
-#define MyAppExeName "CVCraft-v1.0.0.exe"
+#define MyAppExeName "CVCraft.exe"
 #define MyAppAssocName MyAppName + " Career Document"
 #define MyAppAssocExt ".cvcv"
 #define MyAppAssocKey StringChange(MyAppAssocName, " ", "") + MyAppAssocExt
@@ -64,17 +64,19 @@ Name: "startmenuicon"; Description: "Create a Start Menu shortcut"; GroupDescrip
 Source: "dist\CVCraft\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Root assets and branding resources
 Source: "assets\*"; DestDir: "{app}\assets"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Default template database and configurations
+Source: "data\*"; DestDir: "{app}\data"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Documentation & License
 Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu Main Shortcut
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\assets\cvcraft.ico"; AppUserModelID: "{#MyAppAppUserModelID}"; Tasks: startmenuicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\cvcraft.ico"; AppUserModelID: "{#MyAppAppUserModelID}"; Tasks: startmenuicon
 ; Start Menu Uninstaller Shortcut
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 ; Desktop Shortcut
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\assets\cvcraft.ico"; AppUserModelID: "{#MyAppAppUserModelID}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\assets\cvcraft.ico"; AppUserModelID: "{#MyAppAppUserModelID}"; Tasks: desktopicon
 
 [Registry]
 ; Register .cvcv File Association
