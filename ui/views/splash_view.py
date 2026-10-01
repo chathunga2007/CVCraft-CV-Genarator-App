@@ -17,8 +17,9 @@ class SplashView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFixedSize(520, 360)
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowType.SplashScreen | Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self._apply_windows_taskbar_icon()
 
         # Root Layout with padding for shadow / rounded edges
         root_layout = QVBoxLayout(self)
@@ -224,3 +225,20 @@ class SplashView(QWidget):
         self.anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
         self.anim.finished.connect(self.finished.emit)
         self.anim.start()
+
+    def _apply_windows_taskbar_icon(self):
+        import sys
+        if sys.platform == "win32":
+            try:
+                from config import ASSETS_DIR
+                hwnd = int(self.winId())
+                ico_path = str((ASSETS_DIR / "cvcraft.ico").resolve())
+                app_id = "CVCraft.ProfessionalResumeBuilder.App.1.0"
+                from win32com.propsys import propsys, pscon
+                store = propsys.SHGetPropertyStoreForWindow(hwnd)
+                if store:
+                    store.SetValue(pscon.PKEY_AppUserModel_ID, propsys.PROPVARIANTType(app_id))
+                    store.SetValue(pscon.PKEY_AppUserModel_RelaunchIconResource, propsys.PROPVARIANTType(f"{ico_path},0"))
+                    store.Commit()
+            except Exception:
+                pass
