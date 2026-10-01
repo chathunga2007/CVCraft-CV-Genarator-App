@@ -17,21 +17,47 @@ if sys.platform == "win32":
         shell32.SetCurrentProcessExplicitAppUserModelID("CVCraft.ProfessionalResumeBuilder.App.1.0")
     except Exception:
         pass
-    try:
-        import threading
-        from register_app import register_shortcuts_and_app_id
-        threading.Thread(target=register_shortcuts_and_app_id, daemon=True).start()
-    except Exception:
-        pass
 
+import traceback
+from datetime import datetime
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtGui import QIcon, QFont
 from PyQt6.QtCore import Qt
 
-from config import APP_NAME, APP_VERSION, ASSETS_DIR
+from config import APP_NAME, APP_VERSION, ASSETS_DIR, LOGS_DIR
 from ui.main_window import MainWindow
 from ui.views.splash_view import SplashView
+
+def setup_exception_handling():
+    """Captures unhandled exceptions, writes to disk, and prevents silent crash."""
+    crash_log_file = LOGS_DIR / "crash.log"
+
+    def excepthook(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        err_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        try:
+            with open(crash_log_file, "a", encoding="utf-8") as f:
+                f.write(f"\n[{datetime.now().isoformat()}] CRITICAL APPLICATION ERROR:\n{err_msg}\n")
+        except Exception:
+            pass
+
+        # Attempt to show a user-visible message box if Qt event loop is active
+        app = QApplication.instance()
+        if app:
+            try:
+                QMessageBox.critical(
+                    None,
+                    "CVCraft — Error Detected",
+                    f"An unexpected error occurred:\n\n{str(exc_value)}\n\nDetailed crash details have been saved to:\n{crash_log_file}"
+                )
+            except Exception:
+                pass
+
+    sys.excepthook = excepthook
 
 def get_app_icon() -> QIcon:
     ico_p = ASSETS_DIR / "cvcraft.ico"
@@ -43,6 +69,8 @@ def get_app_icon() -> QIcon:
     return QIcon()
 
 def main():
+    setup_exception_handling()
+
     # 2. Initialize Qt Application
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
