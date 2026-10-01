@@ -25,8 +25,8 @@ fetched = repo.get_by_id(demo.id)
 assert fetched is not None
 assert fetched.personal.email == demo.personal.email
 
-print("3. Testing PDF compilation for all 8 templates...")
-templates = ['modern', 'minimal', 'executive', 'developer', 'ats_friendly', 'creative', 'academic', 'professional']
+print("3. Testing PDF compilation for all 9 templates...")
+templates = ['classic_sidebar', 'modern', 'minimal', 'executive', 'developer', 'ats_friendly', 'creative', 'academic', 'professional']
 for t in templates:
     demo.template_id = t
     pdf_bytes = PDFService.generate_pdf_bytes(demo)
