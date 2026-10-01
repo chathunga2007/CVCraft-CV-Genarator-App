@@ -4,6 +4,9 @@ The central desktop application shell coordinating navigation, router,
 shortcuts, theme switching, and global actions.
 """
 
+import sys
+import os
+import ctypes
 from pathlib import Path
 from typing import Optional
 
@@ -35,6 +38,15 @@ from ui.views.job_match_view import JobMatchView
 from ui.views.settings_view import SettingsView
 from ui.views.about_view import AboutView
 
+def get_multi_icon() -> QIcon:
+    ico_p = ASSETS_DIR / "cvcraft.ico"
+    if ico_p.exists():
+        return QIcon(str(ico_p.resolve()))
+    logo_p = ASSETS_DIR / "CVCraft-logo.png"
+    if logo_p.exists():
+        return QIcon(str(logo_p.resolve()))
+    return QIcon()
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -52,10 +64,9 @@ class MainWindow(QMainWindow):
                 max(0, (screen_geom.height() - 760) // 2)
             )
 
-        # Set Window Icon
-        ico_path = ASSETS_DIR / "cvcraft.ico"
-        if ico_path.exists():
-            self.setWindowIcon(QIcon(str(ico_path)))
+        # Set Multi-Resolution Window Icon & Taskbar Identity
+        self.setWindowIcon(get_multi_icon())
+        self._apply_windows_taskbar_icon()
 
         self.cv_repo = CVRepository()
         self.settings_repo = SettingsRepository()
@@ -341,12 +352,18 @@ class MainWindow(QMainWindow):
         cv = self.cv_repo.get_by_id(cv_id)
         if not cv: return
         file_path, _ = QFileDialog.getSaveFileName(
-            self, "Export PDF", f"{cv.name.replace(' ', '_')}.pdf", "PDF Documents (*.pdf)"
+            self, "Export Document", f"{cv.name.replace(' ', '_')}.pdf", "PDF Documents (*.pdf);;High-Res Images (*.png)"
         )
         if file_path:
-            PDFService.export_pdf_file(cv, file_path)
-            self.cv_repo.record_export(cv.id, cv.name, file_path)
-            self.toast.show_message(f"Exported to {Path(file_path).name}")
+            if file_path.lower().endswith(".png"):
+                saved = PDFService.export_images(cv, file_path, dpi=300)
+                if saved:
+                    self.cv_repo.record_export(cv.id, cv.name, saved[0])
+                    self.toast.show_message(f"Exported {len(saved)} image(s) (300 DPI)")
+            else:
+                PDFService.export_pdf_file(cv, file_path)
+                self.cv_repo.record_export(cv.id, cv.name, file_path)
+                self.toast.show_message(f"Exported to {Path(file_path).name}")
             self.dashboard_view.refresh()
 
     def duplicate_cv(self, cv_id: str):
@@ -517,3 +534,66 @@ class MainWindow(QMainWindow):
                 self.settings_view.theme_combo.blockSignals(False)
 
         self.toast.show_message(f"Switched to {theme_name.title()} mode")
+
+    def _apply_windows_taskbar_icon(self):
+        """
+        Binds the high-resolution CVCraft icon directly to the Windows Taskbar and HWND.
+        Uses COM IPropertyStore to explicitly set AppUserModelID and RelaunchIconResource.
+        """
+        if sys.platform == "win32":
+            try:
+                hwnd = int(self.winId())
+                ico_path = str((ASSETS_DIR / "cvcraft.ico").resolve())
+                app_id = "CVCraft.ProfessionalResumeBuilder.App.1.0"
+
+                # 1. Bind Windows Taskbar Shell Property Store (Windows 10/11 Taskbar Grouping & Icon)
+                try:
+                    from win32com.propsys import propsys, pscon
+                    store = propsys.SHGetPropertyStoreForWindow(hwnd)
+                    if store:
+                        store.SetValue(pscon.PKEY_AppUserModel_ID, propsys.PROPVARIANTType(app_id))
+                        store.SetValue(pscon.PKEY_AppUserModel_RelaunchIconResource, propsys.PROPVARIANTType(f"{ico_path},0"))
+                        store.SetValue(pscon.PKEY_AppUserModel_RelaunchDisplayNameResource, propsys.PROPVARIANTType("CVCraft"))
+                        store.Commit()
+                except Exception:
+                    pass
+
+                # 2. Bind Win32 Class and Window Icons (Titlebar, Alt-Tab, Taskbar fallback)
+                if os.path.exists(ico_path):
+                    from ctypes import wintypes
+                    user32 = ctypes.windll.user32
+                    user32.LoadImageW.argtypes = [
+                        wintypes.HINSTANCE, wintypes.LPCWSTR, wintypes.UINT,
+                        ctypes.c_int, ctypes.c_int, wintypes.UINT
+                    ]
+                    user32.LoadImageW.restype = wintypes.HANDLE
+                    user32.SendMessageW.argtypes = [
+                        wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM
+                    ]
+                    user32.SendMessageW.restype = wintypes.LPARAM
+
+                    IMAGE_ICON = 1
+                    LR_LOADFROMFILE = 0x00000010
+                    hicon_big = user32.LoadImageW(None, ico_path, IMAGE_ICON, 48, 48, LR_LOADFROMFILE)
+                    hicon_small = user32.LoadImageW(None, ico_path, IMAGE_ICON, 16, 16, LR_LOADFROMFILE)
+                    if hicon_big:
+                        user32.SendMessageW(hwnd, 0x0080, 1, hicon_big)
+                    if hicon_small:
+                        user32.SendMessageW(hwnd, 0x0080, 0, hicon_small)
+
+                    # Force Window Class Icon for Windows Taskbar Shell
+                    SetClassLongPtr = getattr(user32, 'SetClassLongPtrW', getattr(user32, 'SetClassLongW', None))
+                    if SetClassLongPtr:
+                        SetClassLongPtr.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.HANDLE]
+                        SetClassLongPtr.restype = wintypes.HANDLE
+                        if hicon_big:
+                            SetClassLongPtr(hwnd, -14, hicon_big)
+                        if hicon_small:
+                            SetClassLongPtr(hwnd, -34, hicon_small)
+            except Exception:
+                pass
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._apply_windows_taskbar_icon()
+
