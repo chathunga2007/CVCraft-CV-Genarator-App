@@ -24,3 +24,10 @@ Thumbs.db
 data/exports/*.pdf
 data/backups/*.zip
 *.log
+
+# PyInstaller & Inno Setup Build Artifacts
+build/
+dist/
+Output/
+*.spec
+launcher.cs
